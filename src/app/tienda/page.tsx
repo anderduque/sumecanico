@@ -105,7 +105,10 @@ export default async function TiendaPage({
             <p className="text-sm text-zinc-700">{p.summary}</p>
             <div className="mt-4 flex items-center justify-between gap-3">
               <Link
-                href={`/tienda/${p.slug}`}
+                href={{
+                  pathname: `/tienda/${encodeURIComponent(p.slug)}`,
+                  query: { p: Buffer.from(JSON.stringify(p)).toString("base64url") },
+                }}
                 className="text-sm font-semibold text-primary hover:underline"
               >
                 Ver detalles

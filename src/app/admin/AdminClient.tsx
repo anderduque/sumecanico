@@ -1541,11 +1541,6 @@ export function AdminClient() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-5">
-                  {error ? (
-                    <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
-                      {error}
-                    </div>
-                  ) : null}
                   <div className="grid gap-3">
                     <div className="grid gap-2">
                       <label className="text-sm font-semibold text-zinc-900" htmlFor="name">
@@ -1929,35 +1924,42 @@ export function AdminClient() {
                     </div>
                   </div>
                 </div>
-            <div className="flex items-center justify-between border-t border-zinc-200 px-5 py-4">
-              {isEditingExisting ? (
-                <button
-                  type="button"
-                  onClick={remove}
-                  className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
-                  disabled={state === "loading"}
-                >
-                  Eliminar
-                </button>
-              ) : (
-                <div />
-              )}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPanel(false)}
-                  className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={save}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:brightness-90"
-                  disabled={state === "loading"}
-                >
-                  Guardar
-                </button>
+            <div className="border-t border-zinc-200 px-5 py-4">
+              {error ? (
+                <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+                  {error}
+                </div>
+              ) : null}
+              <div className="flex items-center justify-between">
+                {isEditingExisting ? (
+                  <button
+                    type="button"
+                    onClick={remove}
+                    className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
+                    disabled={state === "loading"}
+                  >
+                    Eliminar
+                  </button>
+                ) : (
+                  <div />
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPanel(false)}
+                    className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={save}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:brightness-90"
+                    disabled={state === "loading"}
+                  >
+                    Guardar
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -20,8 +20,57 @@ export async function generateMetadata({
   return { title: product.name, description: product.summary };
 }
 
-export default async function ProductoPage({ params }: { params: { slug: string } }) {
-  const product = await getProductBySlug(params.slug);
+function isProductFallback(x: unknown): x is {
+  slug: string;
+  name: string;
+  summary: string;
+  category: string;
+  imageUrl?: string;
+  priceCents: number;
+  currency: string;
+  stockStatus: "in_stock" | "on_request";
+  compatibleWith?: string[];
+  specs?: { label: string; value: string }[];
+} {
+  if (!x || typeof x !== "object") return false;
+  const p = x as Record<string, unknown>;
+  if (typeof p.slug !== "string" || p.slug.trim() === "") return false;
+  if (typeof p.name !== "string" || p.name.trim() === "") return false;
+  if (typeof p.summary !== "string") return false;
+  if (typeof p.category !== "string") return false;
+  if (p.imageUrl !== undefined && typeof p.imageUrl !== "string") return false;
+  if (typeof p.priceCents !== "number" || !Number.isFinite(p.priceCents)) return false;
+  if (typeof p.currency !== "string" || p.currency.trim() === "") return false;
+  if (p.stockStatus !== "in_stock" && p.stockStatus !== "on_request") return false;
+  if (p.compatibleWith !== undefined && !Array.isArray(p.compatibleWith)) return false;
+  if (p.specs !== undefined) {
+    if (!Array.isArray(p.specs)) return false;
+    for (const s of p.specs) {
+      if (!s || typeof s !== "object") return false;
+      const item = s as { label?: unknown; value?: unknown };
+      if (typeof item.label !== "string") return false;
+      if (typeof item.value !== "string") return false;
+    }
+  }
+  return true;
+}
+
+export default async function ProductoPage({
+  params,
+  searchParams,
+}: {
+  params: { slug: string };
+  searchParams?: { p?: string };
+}) {
+  const slug = params.slug.trim();
+  let product = await getProductBySlug(slug);
+  if (!product && searchParams?.p) {
+    try {
+      const raw = Buffer.from(searchParams.p, "base64url").toString("utf8");
+      const parsed = JSON.parse(raw) as unknown;
+      if (isProductFallback(parsed) && parsed.slug === slug) product = parsed;
+    } catch {}
+  }
   if (!product) notFound();
 
   const stockLabel =
