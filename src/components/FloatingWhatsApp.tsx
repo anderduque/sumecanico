@@ -1,7 +1,12 @@
+"use client";
+
 import { whatsAppWaMeUrl } from "@/lib/site";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
+import { usePathname } from "next/navigation";
 
 export function FloatingWhatsApp() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/admin")) return null;
   const href = whatsAppWaMeUrl(
     "Hola, necesito ayuda con servicios o repuestos. Mi consulta es:",
   );
@@ -17,4 +22,3 @@ export function FloatingWhatsApp() {
     </a>
   );
 }
-

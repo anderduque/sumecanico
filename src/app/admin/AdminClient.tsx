@@ -268,6 +268,16 @@ export function AdminClient() {
         </div>
       ) : (
         <>
+          <div className="fixed right-4 top-4 z-50">
+            <button
+              type="button"
+              className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50"
+              onClick={logout}
+            >
+              Cerrar sesión
+            </button>
+          </div>
+
           <div className="flex flex-col gap-2">
             <h1 className="bg-gradient-to-r from-primary to-zinc-950 bg-clip-text text-2xl font-semibold text-transparent sm:text-3xl">
               Admin · Inventario
@@ -296,13 +306,6 @@ export function AdminClient() {
                   onClick={startNew}
                 >
                   Nuevo
-                </button>
-                <button
-                  type="button"
-                  className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                  onClick={logout}
-                >
-                  Cerrar sesión
                 </button>
               </div>
             </div>
@@ -361,22 +364,13 @@ export function AdminClient() {
                   <div className="text-sm font-semibold text-zinc-950">
                     {isEditingExisting ? "Editar repuesto" : "Crear repuesto"}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="rounded-md border border-zinc-200 px-2 py-1 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                      onClick={logout}
-                    >
-                      Cerrar sesión
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-md border border-zinc-200 px-2 py-1 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                      onClick={() => setShowPanel(false)}
-                    >
-                      Cerrar
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="rounded-md border border-zinc-200 px-2 py-1 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                    onClick={() => setShowPanel(false)}
+                  >
+                    Cerrar
+                  </button>
                 </div>
                 <div className="max-h-[calc(100%-56px)] overflow-y-auto p-5">
                   {error ? (

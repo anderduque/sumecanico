@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useMemo } from "react";
 import { useCart } from "@/cart/CartProvider";
 import { Container } from "@/components/Container";
 import { site } from "@/lib/site";
@@ -26,10 +25,9 @@ function NavLink({ href, label }: { href: string; label: string }) {
 
 export function Header() {
   const { totalItems } = useCart();
-  const cartLabel = useMemo(() => {
-    if (totalItems <= 0) return "Carrito";
-    return `Carrito (${totalItems})`;
-  }, [totalItems]);
+  const pathname = usePathname();
+  if (pathname.startsWith("/admin")) return null;
+  const cartLabel = totalItems <= 0 ? "Carrito" : `Carrito (${totalItems})`;
 
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">

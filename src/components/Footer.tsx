@@ -1,11 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { Container } from "@/components/Container";
 import { site } from "@/lib/site";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { whatsAppWaMeUrl } from "@/lib/site";
 
 export function Footer() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/admin")) return null;
   return (
     <footer className="border-t border-primary/30 bg-gradient-to-b from-zinc-950 to-zinc-900 text-zinc-200">
       <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-transparent" />
