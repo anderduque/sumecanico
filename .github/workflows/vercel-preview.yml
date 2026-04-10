@@ -15,6 +15,9 @@ env:
 jobs:
   Deploy-Preview:
     runs-on: ubuntu-latest
+    concurrency:
+      group: preview-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v2
 
@@ -28,4 +31,17 @@ jobs:
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy Project Artifacts to Vercel (Preview)
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --meta gitCommitAuthorName="Trae Bot" --meta gitCommitMessage="Preview deployment"
+        id: deploy
+        run: |
+          vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --meta gitCommitAuthorName="Trae Bot" --meta gitCommitMessage="Preview deployment" --json > deployment.json
+          echo "url=$(jq -r '.url' deployment.json)" >> $GITHUB_OUTPUT
+
+      - name: Comment Preview URL on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = process.env.PREVIEW_URL || '${{ steps.deploy.outputs.url }}'
+            const body = `✅ Preview desplegado:\n\n${url}\n\nSe promoverá a producción automáticamente al hacer merge si los checks pasan.`
+            const { owner, repo, number } = context.issue
+            await github.rest.issues.createComment({ owner, repo, issue_number: number, body })
