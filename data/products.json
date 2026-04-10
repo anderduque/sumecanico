@@ -4,7 +4,6 @@
     "name": "Filtro de aceite (universal)",
     "summary": "Filtro para mantenimiento básico. Compatibilidad según modelo.",
     "category": "Filtros",
-    "imageUrl": "",
     "priceCents": 250000,
     "currency": "USD",
     "stockStatus": "on_request",
@@ -15,19 +14,21 @@
     "name": "Pastillas de freno delanteras",
     "summary": "Kit delantero. Verifica compatibilidad con tu vehículo.",
     "category": "Frenos",
-    "imageUrl": "",
     "priceCents": 650000,
     "currency": "USD",
     "stockStatus": "on_request",
     "inventoryQty": 0,
-    "compatibleWith": ["Sedán", "Hatchback", "SUV (según referencia)"]
+    "compatibleWith": [
+      "Sedán",
+      "Hatchback",
+      "SUV (según referencia)"
+    ]
   },
   {
     "slug": "bujias-kit-4",
     "name": "Bujías (kit x4)",
     "summary": "Kit de bujías para encendido. Tipo según motor.",
     "category": "Encendido",
-    "imageUrl": "",
     "priceCents": 480000,
     "currency": "USD",
     "stockStatus": "on_request",
@@ -38,10 +39,19 @@
     "name": "Correa de distribución",
     "summary": "Repuesto crítico. Incluye recomendación de cambio por kilometraje.",
     "category": "Motor",
-    "imageUrl": "",
     "priceCents": 1200000,
     "currency": "USD",
     "stockStatus": "on_request",
     "inventoryQty": 0
+  },
+  {
+    "slug": "test",
+    "name": "test",
+    "summary": "",
+    "category": "frenos",
+    "priceCents": 120,
+    "currency": "USD",
+    "stockStatus": "in_stock",
+    "inventoryQty": 10
   }
 ]

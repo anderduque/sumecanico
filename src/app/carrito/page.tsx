@@ -5,19 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/cart/CartProvider";
 import { Container } from "@/components/Container";
 import { formatMoney } from "@/lib/money";
-import { whatsAppWaMeUrl } from "@/lib/site";
 import type { Product } from "@/lib/productTypes";
-
-function buildOrderMessage(lines: { name: string; quantity: number }[]) {
-  const itemsText = lines
-    .map((l) => `- ${l.quantity} x ${l.name}`)
-    .join("\n");
-  return `Hola, quiero cotizar/confirmar este pedido de repuestos:\n${itemsText}\n\nMi vehículo es:`;
-}
 
 export default function CarritoPage() {
   const { lines, totalItems, remove, setQuantity, clear } = useCart();
-  const [note, setNote] = useState("");
   const [productsBySlug, setProductsBySlug] = useState<Record<string, Product>>({});
 
   useEffect(() => {
@@ -56,15 +47,6 @@ export default function CarritoPage() {
     return enriched.reduce((sum, line) => sum + line.product.priceCents * line.quantity, 0);
   }, [enriched]);
 
-  const whatsappUrl = useMemo(() => {
-    const items = enriched.map((x) => ({ name: x.product.name, quantity: x.quantity }));
-    const base = buildOrderMessage(items);
-    const withNote = note.trim()
-      ? `${base}\n\nNotas:\n${note.trim()}`
-      : base;
-    return whatsAppWaMeUrl(withNote);
-  }, [enriched, note]);
-
   return (
     <Container className="py-10 sm:py-14">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -73,8 +55,8 @@ export default function CarritoPage() {
             Carrito
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-zinc-700">
-            Revisa cantidades y envía el pedido por WhatsApp. Confirmamos compatibilidad y
-            disponibilidad antes de finalizar.
+            Revisa cantidades y finaliza tu compra. Confirmamos compatibilidad y disponibilidad
+            antes de finalizar.
           </p>
         </div>
         <Link href="/tienda" className="text-sm font-semibold text-primary hover:underline">
@@ -182,29 +164,14 @@ export default function CarritoPage() {
                   {formatMoney(total, { currency: "USD" })}
                 </span>
               </div>
-              <div className="mt-4">
-                <label className="text-sm font-semibold text-zinc-900" htmlFor="note">
-                  Notas (opcional)
-                </label>
-                <textarea
-                  id="note"
-                  className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                  rows={4}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Ej: necesito entrega hoy, tengo foto del repuesto, etc."
-                />
-              </div>
 
               <div className="mt-5 grid gap-3">
-                <a
-                  className="inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                <Link
+                  className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:brightness-90"
+                  href="/checkout"
                 >
-                  Enviar pedido por WhatsApp
-                </a>
+                  Checkout
+                </Link>
                 <button
                   type="button"
                   className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"

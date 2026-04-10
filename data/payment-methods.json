@@ -1,0 +1,23 @@
+[
+  {
+    "id": "binance",
+    "name": "Binance",
+    "details": "ID (UID) 1159704036\nsumecanicoca6@gmail.com",
+    "enabled": true,
+    "sort": 10
+  },
+  {
+    "id": "pago-movil",
+    "name": "Pago móvil",
+    "details": "16324599\n04144058359\nVENEZUELA\nBNC\nBANCAAMIGA",
+    "enabled": true,
+    "sort": 20
+  },
+  {
+    "id": "zinli",
+    "name": "Zinli",
+    "details": "sumecanicoca6@gmail.com",
+    "enabled": true,
+    "sort": 30
+  }
+]

@@ -25,7 +25,7 @@ function isProduct(x: unknown): x is Product {
   return true;
 }
 
-function getFirestoreDb() {
+export function getFirestoreDb() {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
