@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Container } from "@/components/Container";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { site } from "@/lib/site";
+import { AutoFitText } from "@/components/AutoFitText";
 
 export default function Home() {
   return (
@@ -71,25 +72,25 @@ export default function Home() {
                       <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
                         Experiencia
                       </div>
-                      <div className="mt-1 break-normal text-base font-semibold text-zinc-950 sm:text-lg">
+                      <AutoFitText className="mt-1 font-semibold text-zinc-950" maxFontSize={18} minFontSize={12}>
                         +20 años
-                      </div>
+                      </AutoFitText>
                     </div>
                     <div className="min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                       <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
                         Motores
                       </div>
-                      <div className="mt-1 break-normal text-base font-semibold text-zinc-950 sm:text-lg">
+                      <AutoFitText className="mt-1 font-semibold text-zinc-950" maxFontSize={18} minFontSize={12}>
                         Especialistas
-                      </div>
+                      </AutoFitText>
                     </div>
                     <div className="min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                       <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
                         Repuestos
                       </div>
-                      <div className="mt-1 break-normal text-base font-semibold text-zinc-950 sm:text-lg">
+                      <AutoFitText className="mt-1 font-semibold text-zinc-950" maxFontSize={18} minFontSize={12}>
                         Catálogo
-                      </div>
+                      </AutoFitText>
                     </div>
                   </div>
                 </div>
