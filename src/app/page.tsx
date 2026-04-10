@@ -71,7 +71,7 @@ export default function Home() {
                       <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
                         Experiencia
                       </div>
-                      <div className="mt-1 break-words text-base font-semibold text-zinc-950 sm:text-lg">
+                      <div className="mt-1 break-normal text-base font-semibold text-zinc-950 sm:text-lg">
                         +20 años
                       </div>
                     </div>
@@ -79,7 +79,7 @@ export default function Home() {
                       <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
                         Motores
                       </div>
-                      <div className="mt-1 break-words text-base font-semibold text-zinc-950 sm:text-lg">
+                      <div className="mt-1 break-normal text-base font-semibold text-zinc-950 sm:text-lg">
                         Especialistas
                       </div>
                     </div>
@@ -87,7 +87,7 @@ export default function Home() {
                       <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
                         Repuestos
                       </div>
-                      <div className="mt-1 break-words text-base font-semibold text-zinc-950 sm:text-lg">
+                      <div className="mt-1 break-normal text-base font-semibold text-zinc-950 sm:text-lg">
                         Catálogo
                       </div>
                     </div>
