@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Container } from "@/components/Container";
 import type { Product } from "@/lib/productTypes";
 import type { PaymentMethod } from "@/lib/paymentMethodsStore";
@@ -25,8 +25,9 @@ function emptyProduct(): Product {
     priceCents: 0,
     currency: "USD",
     stockStatus: "on_request",
-    inventoryQty: 0,
+    inventoryQty: undefined,
     compatibleWith: [],
+    specs: [],
   };
 }
 
@@ -61,6 +62,259 @@ const productCategoryOptions = [
   "Filtros",
   "Adicional",
 ] as const;
+
+const specLabelOptions = [
+  "Ancho (cm)",
+  "Largo (cm)",
+  "Peso (gr)",
+  "Fabricado en",
+  "Alto (cm)",
+  "Nro de pieza",
+] as const;
+
+const popularPaymentPresets = [
+  { label: "Zelle", id: "zelle", name: "Zelle" },
+  { label: "Zinli", id: "zinli", name: "Zinli" },
+  { label: "Binance", id: "binance", name: "Binance" },
+  { label: "Pago móvil", id: "pago-movil", name: "Pago móvil" },
+  { label: "PayPal", id: "paypal", name: "PayPal" },
+] as const;
+
+const venezuelaBanks = [
+  "Banco de Venezuela",
+  "Mercantil Banco",
+  "Banesco",
+  "BBVA Provincial",
+  "Bancamiga",
+  "Banco Nacional de Crédito (BNC)",
+  "Bancaribe",
+  "Banco Exterior",
+  "Venezolano de Crédito",
+  "BFC Banco Fondo Común",
+  "Banplus",
+  "Banco Plaza",
+  "Banco Sofitasa",
+  "Banco Caroní",
+  "Banco Activo",
+  "DelSur Banco Universal",
+  "100% Banco",
+  "Banco del Tesoro",
+  "BANFANB",
+  "Banco Agrícola de Venezuela",
+  "Banco Internacional de Desarrollo",
+  "Banco Digital de los Trabajadores",
+  "N58 Banco Digital",
+  "Bancrecer",
+  "R4 Banco Microfinanciero",
+  "Bangente",
+] as const;
+
+const popularVehicleBrands = [
+  "Toyota",
+  "Chevrolet",
+  "Ford",
+  "Nissan",
+  "Hyundai",
+  "Kia",
+  "Honda",
+  "Mazda",
+  "Mitsubishi",
+  "Volkswagen",
+  "Renault",
+  "Peugeot",
+  "Fiat",
+  "Jeep",
+  "Mercedes-Benz",
+  "BMW",
+  "Audi",
+  "Chery",
+  "Geely",
+  "Suzuki",
+  "Isuzu",
+] as const;
+
+const vehicleBodyStyles = ["Sedán", "Hatchback", "SUV", "Pickup", "Van", "Coupé", "Wagon"] as const;
+
+const vehicleModelsByBrandAndBodyStyle: Record<string, Record<string, string[]>> = {
+  Toyota: {
+    "Sedán": ["Corolla", "Yaris", "Camry"],
+    Hatchback: ["Yaris", "Corolla"],
+    SUV: ["RAV4", "Fortuner", "Land Cruiser", "Prado"],
+    Pickup: ["Hilux"],
+    Van: ["Hiace"],
+  },
+  Chevrolet: {
+    "Sedán": ["Aveo", "Optra", "Cruze"],
+    Hatchback: ["Spark", "Aveo"],
+    SUV: ["Captiva", "Trailblazer"],
+    Pickup: ["Colorado", "Silverado"],
+    Van: ["N300", "Express"],
+  },
+  Ford: {
+    "Sedán": ["Fiesta", "Focus", "Fusion"],
+    Hatchback: ["Fiesta", "Focus"],
+    SUV: ["EcoSport", "Escape", "Explorer"],
+    Pickup: ["Ranger", "F-150"],
+  },
+  Nissan: {
+    "Sedán": ["Sentra", "Versa", "Altima"],
+    Hatchback: ["Tiida", "March"],
+    SUV: ["X-Trail", "Kicks", "Pathfinder"],
+    Pickup: ["Frontier", "NP300"],
+    Van: ["Urvan"],
+  },
+  Hyundai: {
+    "Sedán": ["Elantra", "Accent", "Sonata"],
+    Hatchback: ["i20", "Accent"],
+    SUV: ["Tucson", "Santa Fe", "Creta"],
+    Pickup: ["Santa Cruz"],
+    Van: ["H-1"],
+  },
+  Kia: {
+    "Sedán": ["Cerato", "Rio", "Optima"],
+    Hatchback: ["Rio", "Picanto"],
+    SUV: ["Sportage", "Sorento", "Seltos"],
+  },
+  Honda: {
+    "Sedán": ["Civic", "Accord"],
+    Hatchback: ["Civic"],
+    SUV: ["CR-V", "HR-V", "Pilot"],
+  },
+  Mazda: {
+    "Sedán": ["Mazda3", "Mazda6"],
+    Hatchback: ["Mazda3"],
+    SUV: ["CX-3", "CX-5", "CX-9"],
+    Pickup: ["BT-50"],
+  },
+  Mitsubishi: {
+    "Sedán": ["Lancer"],
+    Hatchback: ["Colt"],
+    SUV: ["Outlander", "Montero", "ASX"],
+    Pickup: ["L200"],
+  },
+  Volkswagen: {
+    "Sedán": ["Jetta", "Passat"],
+    Hatchback: ["Golf", "Polo", "Gol"],
+    SUV: ["Tiguan", "T-Cross", "Taos"],
+    Pickup: ["Amarok"],
+  },
+  Renault: {
+    "Sedán": ["Logan"],
+    Hatchback: ["Sandero"],
+    SUV: ["Duster", "Koleos"],
+  },
+  Peugeot: {
+    "Sedán": ["301", "408"],
+    Hatchback: ["206", "207", "208", "308"],
+    SUV: ["2008", "3008", "5008"],
+  },
+  Fiat: {
+    "Sedán": ["Siena", "Cronos"],
+    Hatchback: ["Uno", "Palio"],
+    Pickup: ["Strada", "Toro"],
+  },
+  Jeep: {
+    SUV: ["Compass", "Cherokee", "Grand Cherokee", "Wrangler"],
+  },
+  "Mercedes-Benz": {
+    "Sedán": ["Clase C", "Clase E"],
+    SUV: ["GLA", "GLC", "GLE"],
+  },
+  BMW: {
+    "Sedán": ["Serie 3", "Serie 5"],
+    SUV: ["X1", "X3", "X5"],
+  },
+  Audi: {
+    "Sedán": ["A3", "A4", "A6"],
+    SUV: ["Q3", "Q5", "Q7"],
+  },
+  Chery: {
+    "Sedán": ["Orinoco", "Arrizo"],
+    SUV: ["Tiggo 2", "Tiggo 3", "Tiggo 4", "Tiggo 7"],
+  },
+  Geely: {
+    "Sedán": ["Emgrand"],
+    SUV: ["Coolray", "GX3"],
+  },
+  Suzuki: {
+    "Sedán": ["Ciaz"],
+    Hatchback: ["Swift"],
+    SUV: ["Vitara", "Grand Vitara", "Jimny"],
+  },
+  Isuzu: {
+    Pickup: ["D-Max"],
+  },
+};
+
+function normalizePaymentKey(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function getPaymentIconKey(method: PaymentMethod) {
+  const key = normalizePaymentKey(method.id || method.name);
+  if (key.includes("paypal")) return "paypal";
+  if (key.includes("binance")) return "binance";
+  if (key.includes("zelle")) return "zelle";
+  if (key.includes("zinli")) return "zinli";
+  if (key.includes("pagomovil") || key.includes("pagomobile")) return "pago-movil";
+  return "generic";
+}
+
+function getPaymentIconUrl(method: PaymentMethod) {
+  const key = getPaymentIconKey(method);
+  if (key === "paypal") return "https://cdn.simpleicons.org/paypal?viewbox=auto&size=20";
+  if (key === "binance") return "https://cdn.simpleicons.org/binance?viewbox=auto&size=20";
+  if (key === "zelle") return "https://cdn.simpleicons.org/zelle?viewbox=auto&size=20";
+  return null;
+}
+
+function getBankFromDetails(details: string) {
+  const lines = (details ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const found = lines.find((l) => l.toLowerCase().startsWith("banco:"));
+  const bank = found?.slice("banco:".length).trim();
+  return bank || "";
+}
+
+function setBankInDetails(details: string, bank: string) {
+  const nextBank = bank.trim();
+  const lines = (details ?? "").split("\n");
+  const out: string[] = [];
+  let replaced = false;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.toLowerCase().startsWith("banco:")) {
+      if (!replaced) {
+        out.push(`Banco: ${nextBank}`);
+        replaced = true;
+      }
+      continue;
+    }
+    out.push(raw);
+  }
+  if (!replaced && nextBank) out.unshift(`Banco: ${nextBank}`);
+  return out.join("\n").trim();
+}
+
+function stripBankFromDetails(details: string) {
+  const lines = (details ?? "").split("\n");
+  const out: string[] = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.toLowerCase().startsWith("banco:")) continue;
+    out.push(raw);
+  }
+  return out.join("\n").trim();
+}
 
 const maxUploadImageBytes = 2_000_000;
 const maxUploadImageDimension = 1024;
@@ -105,6 +359,10 @@ async function fileToOptimizedJpegDataUrl(file: File) {
 }
 
 export function AdminClient() {
+  const sessionAuthKey = "admin_auth_header";
+  const sessionLastActiveKey = "admin_last_active_at";
+  const idleTimeoutMs = 15 * 60 * 1000;
+
   const [user, setUser] = useState(() => {
     try {
       if (typeof window === "undefined") return "";
@@ -114,29 +372,208 @@ export function AdminClient() {
     }
   });
   const [password, setPassword] = useState("");
-  const [authHeader, setAuthHeader] = useState<string | null>(null);
+  const [authHeader, setAuthHeader] = useState<string | null>(() => {
+    try {
+      if (typeof window === "undefined") return null;
+      const storedHeader = sessionStorage.getItem(sessionAuthKey);
+      if (!storedHeader) return null;
+      const last = Number(sessionStorage.getItem(sessionLastActiveKey));
+      if (!Number.isFinite(last) || Date.now() - last >= idleTimeoutMs) {
+        sessionStorage.removeItem(sessionAuthKey);
+        sessionStorage.removeItem(sessionLastActiveKey);
+        return null;
+      }
+      return storedHeader;
+    } catch {
+      return null;
+    }
+  });
   const [rememberMe, setRememberMe] = useState(true);
 
   const [state, setState] = useState<LoadState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [savedNotice, setSavedNotice] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
 
   const [draft, setDraft] = useState<Product>(emptyProduct());
   const [compatibleWithText, setCompatibleWithText] = useState("");
+  const [compatBrand, setCompatBrand] = useState("");
+  const [compatBodyStyle, setCompatBodyStyle] = useState("");
+  const [compatModel, setCompatModel] = useState("");
   const [showPanel, setShowPanel] = useState(false);
-  const [priceInput, setPriceInput] = useState("0");
+  const [priceInput, setPriceInput] = useState("");
+  const [inventoryInput, setInventoryInput] = useState("");
 
-  const [tab, setTab] = useState<"products" | "payments">("products");
+  const [tab, setTab] = useState<"dashboard" | "products" | "payments">("dashboard");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [paymentsState, setPaymentsState] = useState<LoadState>("idle");
   const [paymentsError, setPaymentsError] = useState<string | null>(null);
   const [paymentsSaved, setPaymentsSaved] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentModalMode, setPaymentModalMode] = useState<"add" | "edit">("add");
+  const [paymentEditIndex, setPaymentEditIndex] = useState<number | null>(null);
+  const [selectedPopularPaymentId, setSelectedPopularPaymentId] = useState("");
+  const [paymentDraft, setPaymentDraft] = useState<PaymentMethod>({
+    id: "",
+    name: "",
+    details: "",
+    enabled: true,
+    sort: 10,
+  });
+  const [paymentDraftBank, setPaymentDraftBank] = useState("");
+  const [paymentDraftError, setPaymentDraftError] = useState<string | null>(null);
 
   const isEditingExisting = useMemo(() => {
     return !!draft.slug && products.some((p) => p.slug === draft.slug);
   }, [draft.slug, products]);
+  const shouldTrackInventory = draft.stockStatus === "in_stock";
+  const compatModelOptions = useMemo(() => {
+    if (!compatBrand || !compatBodyStyle) return [];
+    const models = vehicleModelsByBrandAndBodyStyle[compatBrand]?.[compatBodyStyle] ?? [];
+    return models;
+  }, [compatBodyStyle, compatBrand]);
 
-  async function load(nextAuthHeader: string) {
+  const logout = useCallback(() => {
+    try {
+      sessionStorage.removeItem(sessionAuthKey);
+      sessionStorage.removeItem(sessionLastActiveKey);
+    } catch {}
+    setAuthHeader(null);
+    setPassword("");
+    setProducts([]);
+    setDraft(emptyProduct());
+    setCompatibleWithText("");
+    setCompatBrand("");
+    setCompatBodyStyle("");
+    setCompatModel("");
+    setPriceInput("");
+    setInventoryInput("");
+    setError(null);
+    setState("idle");
+    setShowPanel(false);
+    setTab("dashboard");
+    setPaymentMethods([]);
+    setPaymentsError(null);
+    setPaymentsState("idle");
+    setPaymentsSaved(false);
+    setShowPaymentModal(false);
+    setPaymentModalMode("add");
+    setPaymentEditIndex(null);
+    setSelectedPopularPaymentId("");
+    setPaymentDraft({ id: "", name: "", details: "", enabled: true, sort: 10 });
+    setPaymentDraftBank("");
+    setPaymentDraftError(null);
+  }, []);
+
+  function clearStoredAuth() {
+    try {
+      sessionStorage.removeItem(sessionAuthKey);
+      sessionStorage.removeItem(sessionLastActiveKey);
+    } catch {}
+  }
+
+  function bumpActivity() {
+    try {
+      sessionStorage.setItem(sessionLastActiveKey, String(Date.now()));
+    } catch {}
+  }
+
+  function openNewPaymentMethodModal() {
+    const nextSort = paymentMethods.length > 0 ? Math.max(...paymentMethods.map((m) => m.sort)) + 10 : 10;
+    setPaymentDraft({ id: "", name: "", details: "", enabled: true, sort: nextSort });
+    setPaymentDraftError(null);
+    setPaymentModalMode("add");
+    setPaymentEditIndex(null);
+    setSelectedPopularPaymentId("");
+    setPaymentDraftBank("");
+    setShowPaymentModal(true);
+  }
+
+  function openEditPaymentMethodModal(idx: number) {
+    const current = paymentMethods[idx];
+    if (!current) return;
+    setPaymentDraft({
+      id: current.id ?? "",
+      name: current.name ?? "",
+      details: current.details ?? "",
+      enabled: !!current.enabled,
+      sort: Number.isFinite(current.sort) ? Math.trunc(current.sort) : 0,
+    });
+    setSelectedPopularPaymentId("");
+    setPaymentDraftBank(getBankFromDetails(current.details ?? ""));
+    setPaymentDraftError(null);
+    setPaymentModalMode("edit");
+    setPaymentEditIndex(idx);
+    setShowPaymentModal(true);
+  }
+
+  function upsertPaymentMethodFromDraft() {
+    const name = paymentDraft.name.trim();
+    if (!name) {
+      setPaymentDraftError("El nombre es requerido.");
+      return;
+    }
+
+    const derivedId = paymentDraft.id.trim() ? paymentDraft.id.trim() : slugify(name);
+    if (!derivedId) {
+      setPaymentDraftError("El código es requerido.");
+      return;
+    }
+
+    const draftKind = getPaymentIconKey({ ...paymentDraft, id: derivedId, name });
+    if (draftKind === "pago-movil") {
+      const bank = paymentDraftBank.trim() || getBankFromDetails(paymentDraft.details ?? "");
+      if (!bank) {
+        setPaymentDraftError("Selecciona el banco (Pago móvil).");
+        return;
+      }
+    }
+
+    const existingIndex = paymentMethods.findIndex((m) => m.id.trim() === derivedId);
+    if (existingIndex !== -1 && existingIndex !== paymentEditIndex) {
+      setPaymentDraftError("Ya existe un método con ese código.");
+      return;
+    }
+
+    if (paymentModalMode === "edit" && paymentEditIndex !== null) {
+      setPaymentMethods((prev) =>
+        prev.map((m, i) =>
+          i === paymentEditIndex
+            ? {
+                ...m,
+                id: derivedId,
+                name,
+                details:
+                  draftKind === "pago-movil"
+                    ? setBankInDetails(paymentDraft.details ?? "", paymentDraftBank || getBankFromDetails(paymentDraft.details ?? ""))
+                    : (paymentDraft.details ?? ""),
+                enabled: !!paymentDraft.enabled,
+                sort: Number.isFinite(paymentDraft.sort) ? Math.trunc(paymentDraft.sort) : 0,
+              }
+            : m,
+        ),
+      );
+    } else {
+      setPaymentMethods((prev) => [
+        ...prev,
+        {
+        id: derivedId,
+        name,
+          details:
+            draftKind === "pago-movil"
+              ? setBankInDetails(paymentDraft.details ?? "", paymentDraftBank || getBankFromDetails(paymentDraft.details ?? ""))
+              : (paymentDraft.details ?? ""),
+        enabled: !!paymentDraft.enabled,
+        sort: Number.isFinite(paymentDraft.sort) ? Math.trunc(paymentDraft.sort) : 0,
+      },
+      ]);
+    }
+    setPaymentsSaved(false);
+    setShowPaymentModal(false);
+    setPaymentDraftError(null);
+  }
+
+  async function load(nextAuthHeader: string): Promise<boolean> {
     setState("loading");
     setError(null);
     try {
@@ -145,27 +582,31 @@ export function AdminClient() {
         cache: "no-store",
       });
       if (res.status === 401) {
+        clearStoredAuth();
         setAuthHeader(null);
         setState("error");
         setError("Credenciales inválidas o no configuradas.");
-        return;
+        return false;
       }
       if (!res.ok) {
         setState("error");
         setError("No se pudo cargar el catálogo.");
-        return;
+        return false;
       }
       const data = (await res.json()) as unknown;
       const list = Array.isArray(data) ? (data as Product[]) : [];
       setProducts(list);
       setState("ready");
+      bumpActivity();
+      return true;
     } catch {
       setState("error");
       setError("No se pudo cargar el catálogo.");
+      return false;
     }
   }
 
-  async function loadPaymentMethods(nextAuthHeader: string) {
+  async function loadPaymentMethods(nextAuthHeader: string): Promise<boolean> {
     setPaymentsState("loading");
     setPaymentsError(null);
     setPaymentsSaved(false);
@@ -175,15 +616,16 @@ export function AdminClient() {
         cache: "no-store",
       });
       if (res.status === 401) {
+        clearStoredAuth();
         setAuthHeader(null);
         setPaymentsState("error");
         setPaymentsError("Credenciales inválidas o no configuradas.");
-        return;
+        return false;
       }
       if (!res.ok) {
         setPaymentsState("error");
         setPaymentsError("No se pudieron cargar los métodos de pago.");
-        return;
+        return false;
       }
       const data = (await res.json()) as unknown;
       const list = Array.isArray(data) ? (data as PaymentMethod[]) : [];
@@ -193,11 +635,56 @@ export function AdminClient() {
           .sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name)),
       );
       setPaymentsState("ready");
+      bumpActivity();
+      return true;
     } catch {
       setPaymentsState("error");
       setPaymentsError("No se pudieron cargar los métodos de pago.");
+      return false;
     }
   }
+
+  useEffect(() => {
+    if (!authHeader) return;
+    const t = window.setTimeout(() => {
+      void load(authHeader);
+      void loadPaymentMethods(authHeader);
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [authHeader]);
+
+  useEffect(() => {
+    if (!authHeader) return;
+    let lastWrite = 0;
+    const onActivity = () => {
+      const now = Date.now();
+      if (now - lastWrite < 1000) return;
+      lastWrite = now;
+      bumpActivity();
+    };
+    bumpActivity();
+    const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    for (const evt of events) window.addEventListener(evt, onActivity, { passive: true });
+    return () => {
+      for (const evt of events) window.removeEventListener(evt, onActivity);
+    };
+  }, [authHeader]);
+
+  useEffect(() => {
+    if (!authHeader) return;
+    const intervalId = window.setInterval(() => {
+      let last = 0;
+      try {
+        last = Number(sessionStorage.getItem(sessionLastActiveKey));
+      } catch {}
+      if (!Number.isFinite(last) || !last) {
+        bumpActivity();
+        return;
+      }
+      if (Date.now() - last >= idleTimeoutMs) logout();
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [authHeader, logout]);
 
   async function savePaymentMethods() {
     if (!authHeader) return;
@@ -225,6 +712,7 @@ export function AdminClient() {
         body: JSON.stringify(normalized),
       });
       if (res.status === 401) {
+        clearStoredAuth();
         setAuthHeader(null);
         setPaymentsState("error");
         setPaymentsError("Credenciales inválidas o no configuradas.");
@@ -244,14 +732,21 @@ export function AdminClient() {
   }
 
   function selectProduct(p: Product) {
+    const normalizedInventory =
+      p.stockStatus === "in_stock" && typeof p.inventoryQty === "number" ? p.inventoryQty : undefined;
     setDraft({
       ...p,
       imageUrl: p.imageUrl ?? "",
-      inventoryQty: typeof p.inventoryQty === "number" ? p.inventoryQty : 0,
+      inventoryQty: normalizedInventory,
       compatibleWith: p.compatibleWith ?? [],
+      specs: p.specs ?? [],
     });
     setCompatibleWithText(compatibleWithToText(p.compatibleWith));
-    setPriceInput((Math.max(0, Math.round((p.priceCents ?? 0))) / 100).toFixed(2));
+    setCompatBrand("");
+    setCompatBodyStyle("");
+    setCompatModel("");
+    setPriceInput(p.priceCents ? (Math.max(0, Math.round((p.priceCents ?? 0))) / 100).toFixed(2) : "");
+    setInventoryInput(typeof normalizedInventory === "number" && normalizedInventory > 0 ? String(normalizedInventory) : "");
     setError(null);
     setShowPanel(true);
   }
@@ -259,7 +754,11 @@ export function AdminClient() {
   function startNew() {
     setDraft(emptyProduct());
     setCompatibleWithText("");
-    setPriceInput("0");
+    setCompatBrand("");
+    setCompatBodyStyle("");
+    setCompatModel("");
+    setPriceInput("");
+    setInventoryInput("");
     setError(null);
     setShowPanel(true);
   }
@@ -276,19 +775,74 @@ export function AdminClient() {
       return;
     }
 
+    const name = draft.name.trim();
+    if (!name) {
+      setState("error");
+      setError("El nombre es requerido.");
+      return;
+    }
+    const category = draft.category.trim();
+    if (!category) {
+      setState("error");
+      setError("La categoría es requerida.");
+      return;
+    }
+    const summary = draft.summary.trim();
+    if (!summary) {
+      setState("error");
+      setError("La descripción corta es requerida.");
+      return;
+    }
+    const imageUrl = draft.imageUrl?.trim() ? draft.imageUrl.trim() : "";
+    if (!imageUrl) {
+      setState("error");
+      setError("La imagen es requerida.");
+      return;
+    }
+    if (!Number.isFinite(draft.priceCents) || draft.priceCents <= 0) {
+      setState("error");
+      setError("El precio es requerido.");
+      return;
+    }
+    if (!draft.currency?.trim()) {
+      setState("error");
+      setError("La moneda es requerida.");
+      return;
+    }
+    if (!draft.stockStatus) {
+      setState("error");
+      setError("El estado es requerido.");
+      return;
+    }
+    if (shouldTrackInventory) {
+      if (
+        draft.inventoryQty === undefined ||
+        !Number.isFinite(draft.inventoryQty) ||
+        draft.inventoryQty < 0
+      ) {
+        setState("error");
+        setError("El inventario es requerido.");
+        return;
+      }
+    }
+
     const payload: Product = {
       ...draft,
       slug: derivedSlug,
-      name: draft.name.trim(),
-      summary: draft.summary.trim(),
-      category: draft.category.trim(),
+      name,
+      summary,
+      category,
       currency: draft.currency.trim().toUpperCase(),
-      imageUrl: draft.imageUrl?.trim() ? draft.imageUrl.trim() : undefined,
+      imageUrl,
       compatibleWith: parseCompatibleWith(compatibleWithText),
       inventoryQty:
-        typeof draft.inventoryQty === "number"
+        shouldTrackInventory && typeof draft.inventoryQty === "number"
           ? Math.max(0, Math.trunc(draft.inventoryQty))
           : undefined,
+      specs:
+        draft.specs
+          ?.map((s) => ({ label: s.label.trim(), value: s.value.trim() }))
+          .filter((s) => s.label && s.value) ?? undefined,
     };
 
     const method = isEditingExisting ? "PUT" : "POST";
@@ -304,6 +858,7 @@ export function AdminClient() {
       });
 
       if (res.status === 401) {
+        clearStoredAuth();
         setAuthHeader(null);
         setState("error");
         setError("Credenciales inválidas o no configuradas.");
@@ -324,6 +879,9 @@ export function AdminClient() {
 
       await load(authHeader);
       setState("ready");
+      setShowPanel(false);
+      setSavedNotice(isEditingExisting ? "Repuesto actualizado." : "Repuesto guardado.");
+      window.setTimeout(() => setSavedNotice(null), 3200);
     } catch {
       setState("error");
       setError("No se pudo guardar el producto.");
@@ -346,6 +904,7 @@ export function AdminClient() {
         body: JSON.stringify({ slug: draft.slug }),
       });
       if (res.status === 401) {
+        clearStoredAuth();
         setAuthHeader(null);
         setState("error");
         setError("Credenciales inválidas o no configuradas.");
@@ -365,23 +924,6 @@ export function AdminClient() {
     }
   }
 
-  function logout() {
-    setAuthHeader(null);
-    setUser("");
-    setPassword("");
-    setProducts([]);
-    setDraft(emptyProduct());
-    setCompatibleWithText("");
-    setError(null);
-    setState("idle");
-    setShowPanel(false);
-    setTab("products");
-    setPaymentMethods([]);
-    setPaymentsError(null);
-    setPaymentsState("idle");
-    setPaymentsSaved(false);
-  }
-
   async function login() {
     const nextUser = user.trim();
     if (!nextUser || !password) {
@@ -396,8 +938,14 @@ export function AdminClient() {
 
     const header = toAuthHeader(nextUser, password);
     setAuthHeader(header);
-    await load(header);
+    const ok = await load(header);
     await loadPaymentMethods(header);
+    if (ok) {
+      try {
+        sessionStorage.setItem(sessionAuthKey, header);
+        sessionStorage.setItem(sessionLastActiveKey, String(Date.now()));
+      } catch {}
+    }
   }
 
   if (!authHeader) {
@@ -512,47 +1060,114 @@ export function AdminClient() {
         </button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <h1 className="bg-gradient-to-r from-primary to-zinc-950 bg-clip-text text-2xl font-semibold text-transparent sm:text-3xl">
-          Admin · Inventario
-        </h1>
-        <p className="text-sm text-zinc-700">
-          Agrega/edita repuestos con imagen, precio y cantidad. La tienda se actualiza con estos
-          cambios.
-        </p>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <div className="relative h-9 w-28 shrink-0">
+            <Image
+              src={site.logoPath}
+              alt={`${site.name} logo`}
+              fill
+              className="object-contain"
+              sizes="112px"
+              priority
+            />
+          </div>
+          <div className="leading-tight">
+            <div className="text-sm font-semibold text-zinc-950">{site.name}</div>
+            <div className="text-xs text-zinc-600">{site.tagline}</div>
+          </div>
+        </div>
+        <div>
+          <h1 className="bg-gradient-to-r from-primary to-zinc-950 bg-clip-text text-2xl font-semibold text-transparent sm:text-3xl">
+            {tab === "dashboard" ? "Dashboard de Administración" : "Administración"}
+          </h1>
+          <p className="text-sm text-zinc-700">
+            {tab === "dashboard"
+              ? "Elige un módulo para gestionar."
+              : tab === "products"
+              ? "Agrega/edita repuestos con imagen, precio y cantidad."
+              : "Configura métodos de pago visibles en la tienda."}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-6 flex items-center gap-2">
-        <button
-          type="button"
-          className={[
-            "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
-            tab === "products"
-              ? "bg-primary text-white"
-              : "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50",
-          ].join(" ")}
-          onClick={() => setTab("products")}
-        >
-          Repuestos
-        </button>
-        <button
-          type="button"
-          className={[
-            "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
-            tab === "payments"
-              ? "bg-primary text-white"
-              : "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50",
-          ].join(" ")}
-          onClick={() => setTab("payments")}
-        >
-          Métodos de pago
-        </button>
-      </div>
+      {tab === "dashboard" ? (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setTab("products")}
+            className="group rounded-2xl border border-zinc-200 bg-white p-6 text-left shadow-sm transition-colors hover:bg-zinc-50"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                  <path d="M4 7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7Zm3-1a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H7Zm2 3h6v2H9V9Zm0 4h6v2H9v-2Z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-rose-700">Repuestos</div>
+                <div className="text-xs text-zinc-600">Gestiona catálogo, precios e inventario</div>
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("payments")}
+            className="group rounded-2xl border border-zinc-200 bg-white p-6 text-left shadow-sm transition-colors hover:bg-zinc-50"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                  <path d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v2H3V7Zm0 4h18v6a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-6Zm3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-rose-700">Métodos de pago</div>
+                <div className="text-xs text-zinc-600">Configura los medios aceptados</div>
+              </div>
+            </div>
+          </button>
+        </div>
+      ) : (
+        <div className="mt-6 flex items-center gap-2">
+          <button
+            type="button"
+            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+            onClick={() => setTab("dashboard")}
+          >
+            ← Volver
+          </button>
+          <button
+            type="button"
+            className={[
+              "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+              tab === "products"
+                ? "bg-primary text-white"
+                : "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50",
+            ].join(" ")}
+            onClick={() => setTab("products")}
+          >
+            Repuestos
+          </button>
+          <button
+            type="button"
+            className={[
+              "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+              tab === "payments"
+                ? "bg-primary text-white"
+                : "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50",
+            ].join(" ")}
+            onClick={() => setTab("payments")}
+          >
+            Métodos de pago
+          </button>
+        </div>
+      )}
 
       {tab === "products" ? (
         <div className="mt-4 rounded-2xl border border-zinc-200 bg-white">
           <div className="flex items-center justify-between gap-4 border-b border-zinc-200 px-6 py-4">
-            <div className="text-sm font-semibold text-zinc-950">Repuestos</div>
+            <div className="text-sm font-semibold text-rose-700">Repuestos</div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -613,10 +1228,11 @@ export function AdminClient() {
             ) : null}
           </div>
         </div>
-      ) : (
+      ) : null}
+      {tab === "payments" ? (
         <div className="mt-4 rounded-2xl border border-zinc-200 bg-white">
           <div className="flex items-center justify-between gap-4 border-b border-zinc-200 px-6 py-4">
-            <div className="text-sm font-semibold text-zinc-950">Métodos de pago</div>
+            <div className="text-sm font-semibold text-rose-700">Métodos de pago</div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -629,15 +1245,7 @@ export function AdminClient() {
               <button
                 type="button"
                 className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:brightness-90"
-                onClick={() => {
-                  const nextSort =
-                    paymentMethods.length > 0 ? Math.max(...paymentMethods.map((m) => m.sort)) + 10 : 10;
-                  setPaymentMethods((prev) => [
-                    ...prev,
-                    { id: "", name: "", details: "", enabled: true, sort: nextSort },
-                  ]);
-                  setPaymentsSaved(false);
-                }}
+                onClick={openNewPaymentMethodModal}
               >
                 Agregar
               </button>
@@ -665,94 +1273,88 @@ export function AdminClient() {
             ) : null}
 
             <div className="grid gap-4">
-              {paymentMethods.map((m, idx) => (
-                <div key={`${m.id}-${idx}`} className="rounded-2xl border border-zinc-200 p-5">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="grid gap-2">
-                      <label className="text-sm font-semibold text-zinc-900">Nombre</label>
-                      <input
-                        value={m.name}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setPaymentMethods((prev) =>
-                            prev.map((x, i) => (i === idx ? { ...x, name: value } : x)),
-                          );
-                          setPaymentsSaved(false);
-                        }}
-                        onBlur={() => {
-                          if (!m.id.trim() && m.name.trim()) {
-                            const nextId = slugify(m.name);
-                            setPaymentMethods((prev) =>
-                              prev.map((x, i) => (i === idx ? { ...x, id: nextId } : x)),
-                            );
-                          }
-                        }}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                        placeholder="Pago móvil"
-                      />
+              {paymentMethods.map((m, idx) => {
+                const iconKey = getPaymentIconKey(m);
+                const iconUrl = getPaymentIconUrl(m);
+                return (
+                  <div key={`${m.id}-${idx}`} className="rounded-2xl border border-zinc-200 p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-zinc-200 bg-zinc-50">
+                        {iconUrl ? (
+                          <img
+                            src={iconUrl}
+                            alt=""
+                            className="h-5 w-5"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <svg
+                            viewBox="0 0 24 24"
+                            className="h-5 w-5 text-zinc-600"
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
+                            {iconKey === "zinli" ? (
+                              <path d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v9A3.5 3.5 0 0 1 16.5 20h-9A3.5 3.5 0 0 1 4 16.5v-9Zm3.5-1.5A1.5 1.5 0 0 0 6 7.5V9h12V7.5A1.5 1.5 0 0 0 16.5 6h-9ZM6 11v5.5A1.5 1.5 0 0 0 7.5 18h9a1.5 1.5 0 0 0 1.5-1.5V11H6Z" />
+                            ) : iconKey === "pago-movil" ? (
+                              <path d="M8 2.5A2.5 2.5 0 0 0 5.5 5v14A2.5 2.5 0 0 0 8 21.5h8A2.5 2.5 0 0 0 18.5 19V5A2.5 2.5 0 0 0 16 2.5H8Zm0 2h8A.5.5 0 0 1 16.5 5v14a.5.5 0 0 1-.5.5H8a.5.5 0 0 1-.5-.5V5A.5.5 0 0 1 8 4.5Zm3 14.5a1 1 0 1 0 2 0 1 1 0 0 0-2 0Z" />
+                            ) : (
+                              <path d="M12 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm-1 12h2v6h-2v-6Z" />
+                            )}
+                          </svg>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-zinc-950">
+                          {m.name?.trim() ? m.name : "Sin nombre"}
+                        </div>
+                        <div className="mt-0.5 text-xs font-semibold text-zinc-600">{m.id || "—"}</div>
+                        {iconKey === "pago-movil" ? (
+                          <div className="mt-0.5 text-xs font-semibold text-zinc-600">
+                            {getBankFromDetails(m.details ?? "") ? `Banco: ${getBankFromDetails(m.details ?? "")}` : "Banco: —"}
+                          </div>
+                        ) : null}
+                        <div className="mt-3 whitespace-pre-wrap text-sm text-zinc-700">
+                          {m.details?.trim()
+                            ? iconKey === "pago-movil"
+                              ? stripBankFromDetails(m.details)
+                              : m.details
+                            : "—"}
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid gap-2">
-                      <label className="text-sm font-semibold text-zinc-900">Código</label>
-                      <input
-                        value={m.id}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setPaymentMethods((prev) =>
-                            prev.map((x, i) => (i === idx ? { ...x, id: value } : x)),
-                          );
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <span
+                        className={[
+                          "rounded-full px-2 py-1 text-xs font-semibold",
+                          m.enabled ? "bg-emerald-50 text-emerald-900" : "bg-zinc-100 text-zinc-700",
+                        ].join(" ")}
+                      >
+                        {m.enabled ? "Activo" : "Inactivo"}
+                      </span>
+                      <button
+                        type="button"
+                        className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                        onClick={() => openEditPaymentMethodModal(idx)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
+                        onClick={() => {
+                          setPaymentMethods((prev) => prev.filter((_, i) => i !== idx));
                           setPaymentsSaved(false);
                         }}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                        placeholder="pago-movil"
-                      />
+                      >
+                        Eliminar
+                      </button>
                     </div>
-                  </div>
-
-                  <div className="mt-3 grid gap-2">
-                    <label className="text-sm font-semibold text-zinc-900">Detalles</label>
-                    <textarea
-                      value={m.details}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setPaymentMethods((prev) =>
-                          prev.map((x, i) => (i === idx ? { ...x, details: value } : x)),
-                        );
-                        setPaymentsSaved(false);
-                      }}
-                      className="min-h-[90px] w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                      placeholder="Datos del método (una línea por dato)"
-                    />
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-zinc-700">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-zinc-300 text-primary"
-                        checked={m.enabled}
-                        onChange={(e) => {
-                          const value = e.target.checked;
-                          setPaymentMethods((prev) =>
-                            prev.map((x, i) => (i === idx ? { ...x, enabled: value } : x)),
-                          );
-                          setPaymentsSaved(false);
-                        }}
-                      />
-                      Activo
-                    </label>
-                    <button
-                      type="button"
-                      className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
-                      onClick={() => {
-                        setPaymentMethods((prev) => prev.filter((_, i) => i !== idx));
-                        setPaymentsSaved(false);
-                      }}
-                    >
-                      Eliminar
-                    </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {paymentMethods.length === 0 ? (
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
                   No hay métodos de pago.
@@ -761,29 +1363,184 @@ export function AdminClient() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
+
+      {showPaymentModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowPaymentModal(false)}
+            aria-hidden="true"
+          />
+          <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl lg:max-w-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
+              <div className="text-sm font-semibold text-zinc-950">
+                {paymentModalMode === "edit" ? "Editar método de pago" : "Agregar método de pago"}
+              </div>
+              <button
+                type="button"
+                className="rounded-md border border-zinc-200 px-2 py-1 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                onClick={() => setShowPaymentModal(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              {paymentDraftError ? (
+                <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+                  {paymentDraftError}
+                </div>
+              ) : null}
+              <div className="grid gap-3">
+                {paymentModalMode === "add" ? (
+                  <div className="grid gap-2">
+                    <label className="text-sm font-semibold text-zinc-900">Popular</label>
+                    <select
+                        value={selectedPopularPaymentId}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setSelectedPopularPaymentId(value);
+                          const preset = popularPaymentPresets.find((x) => x.id === value);
+                          if (!preset) return;
+                          setPaymentDraft((p) => ({ ...p, name: preset.name, id: preset.id }));
+                          if (preset.id !== "pago-movil") setPaymentDraftBank("");
+                          setPaymentDraftError(null);
+                        }}
+                        className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                    >
+                      <option value="">Selecciona uno</option>
+                      {popularPaymentPresets.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+                <div className="grid gap-2">
+                  <label className="text-sm font-semibold text-zinc-900">Nombre*</label>
+                  <input
+                    value={paymentDraft.name}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setPaymentDraft((p) => ({ ...p, name: value }));
+                      setPaymentDraftError(null);
+                    }}
+                    onBlur={() => {
+                      if (!paymentDraft.id.trim() && paymentDraft.name.trim()) {
+                        const nextId = slugify(paymentDraft.name);
+                        if (nextId) setPaymentDraft((p) => ({ ...p, id: nextId }));
+                      }
+                    }}
+                    className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                    placeholder="Pago móvil"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-semibold text-zinc-900">Código*</label>
+                  <input
+                    value={paymentDraft.id}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setPaymentDraft((p) => ({ ...p, id: value }));
+                      setPaymentDraftError(null);
+                    }}
+                    className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                    placeholder="pago-movil"
+                  />
+                </div>
+                {getPaymentIconKey(paymentDraft) === "pago-movil" ? (
+                  <div className="grid gap-2">
+                    <label className="text-sm font-semibold text-zinc-900">Banco*</label>
+                    <select
+                      value={paymentDraftBank}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setPaymentDraftBank(value);
+                        setPaymentDraft((p) => ({ ...p, details: setBankInDetails(p.details ?? "", value) }));
+                        setPaymentDraftError(null);
+                      }}
+                      className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                    >
+                      <option value="">Selecciona el banco</option>
+                      {venezuelaBanks.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+                <div className="grid gap-2">
+                  <label className="text-sm font-semibold text-zinc-900">Detalles</label>
+                  <textarea
+                    value={paymentDraft.details}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setPaymentDraft((p) => ({ ...p, details: value }));
+                      if (getPaymentIconKey(paymentDraft) === "pago-movil") setPaymentDraftBank(getBankFromDetails(value));
+                      setPaymentDraftError(null);
+                    }}
+                    className="min-h-[90px] w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                    placeholder="Datos del método (una línea por dato)"
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-zinc-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-zinc-300 text-primary"
+                    checked={paymentDraft.enabled}
+                    onChange={(e) => {
+                      const value = e.target.checked;
+                      setPaymentDraft((p) => ({ ...p, enabled: value }));
+                      setPaymentDraftError(null);
+                    }}
+                  />
+                  Activo
+                </label>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-zinc-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={upsertPaymentMethodFromDraft}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:brightness-90"
+              >
+                {paymentModalMode === "edit" ? "Guardar" : "Agregar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showPanel ? (
-        <div className="fixed inset-0 z-50">
-              <div
-                className="absolute inset-0 bg-black/50"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowPanel(false)}
+            aria-hidden="true"
+          />
+          <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl lg:max-w-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
+              <div className="text-sm font-semibold text-zinc-950">
+                {isEditingExisting ? "Editar repuesto" : "Crear repuesto"}
+              </div>
+              <button
+                type="button"
+                className="rounded-md border border-zinc-200 px-2 py-1 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
                 onClick={() => setShowPanel(false)}
-                aria-hidden="true"
-              />
-              <div className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
-                <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-                  <div className="text-sm font-semibold text-zinc-950">
-                    {isEditingExisting ? "Editar repuesto" : "Crear repuesto"}
-                  </div>
-                  <button
-                    type="button"
-                    className="rounded-md border border-zinc-200 px-2 py-1 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                    onClick={() => setShowPanel(false)}
-                  >
-                    Cerrar
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-5">
+              >
+                Cerrar
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
                   {error ? (
                     <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
                       {error}
@@ -792,26 +1549,28 @@ export function AdminClient() {
                   <div className="grid gap-3">
                     <div className="grid gap-2">
                       <label className="text-sm font-semibold text-zinc-900" htmlFor="name">
-                        Nombre
+                        Nombre*
                       </label>
                       <input
                         id="name"
                         value={draft.name}
                         onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                        required
+                        className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
                         placeholder="Pastillas de freno delanteras"
                       />
                     </div>
 
                     <div className="grid gap-2">
                       <label className="text-sm font-semibold text-zinc-900" htmlFor="category">
-                        Categoría
+                        Categoría*
                       </label>
                       <select
                         id="category"
                         value={draft.category}
                         onChange={(e) => setDraft((p) => ({ ...p, category: e.target.value }))}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                        required
+                        className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
                       >
                         <option value="">Selecciona una categoría</option>
                         {productCategoryOptions.map((c) => (
@@ -824,149 +1583,251 @@ export function AdminClient() {
 
                     <div className="grid gap-2">
                       <label className="text-sm font-semibold text-zinc-900" htmlFor="imageFile">
-                        Imagen
+                        Imagen*
                       </label>
-                      {draft.imageUrl ? (
-                        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                      <div className="relative h-44 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                        {draft.imageUrl ? (
                           <img
                             src={draft.imageUrl}
                             alt={draft.name || "Imagen del repuesto"}
-                            className="h-44 w-full object-cover"
+                            className="h-full w-full object-cover"
                           />
-                        </div>
-                      ) : (
-                        <div className="grid h-44 place-items-center rounded-xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
-                          Sin imagen
-                        </div>
-                      )}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <input
-                          id="imageFile"
-                          type="file"
-                          accept="image/*"
-                          className="block w-full text-sm text-zinc-700 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-zinc-900 hover:file:bg-zinc-200"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            setState("loading");
-                            setError(null);
-                            void fileToOptimizedJpegDataUrl(file)
-                              .then((dataUrl) => {
-                                setDraft((p) => ({ ...p, imageUrl: dataUrl }));
-                                setState("ready");
-                              })
-                              .catch((err: unknown) => {
-                                setState("error");
-                                setError(err instanceof Error ? err.message : "No se pudo cargar la imagen.");
-                              });
-                          }}
-                        />
-                        {draft.imageUrl ? (
-                          <button
-                            type="button"
-                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                            onClick={() => setDraft((p) => ({ ...p, imageUrl: "" }))}
+                        ) : (
+                          <div className="grid h-full w-full place-items-center text-sm font-semibold text-zinc-500">
+                            Sin imagen
+                          </div>
+                        )}
+
+                        <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 p-3">
+                          <label
+                            htmlFor="imageFile"
+                            className="cursor-pointer rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50"
                           >
-                            Quitar imagen
-                          </button>
-                        ) : null}
+                            Seleccionar archivo
+                          </label>
+                          {draft.imageUrl ? (
+                            <button
+                              type="button"
+                              className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
+                              onClick={() => setDraft((p) => ({ ...p, imageUrl: "" }))}
+                            >
+                              Quitar
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
+                      <input
+                        id="imageFile"
+                        type="file"
+                        accept="image/*"
+                        required={!draft.imageUrl}
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setState("loading");
+                          setError(null);
+                          void fileToOptimizedJpegDataUrl(file)
+                            .then((dataUrl) => {
+                              setDraft((p) => ({ ...p, imageUrl: dataUrl }));
+                              setState("ready");
+                            })
+                            .catch((err: unknown) => {
+                              setState("error");
+                              setError(err instanceof Error ? err.message : "No se pudo cargar la imagen.");
+                            });
+                        }}
+                      />
                       <div className="text-xs text-zinc-600">
                         Máximo 2MB · Se optimiza automáticamente (hasta {maxUploadImageDimension}px).
                       </div>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="grid gap-2">
-                        <label className="text-sm font-semibold text-zinc-900" htmlFor="priceCents">
-                          Precio
-                        </label>
-                        <input
-                          id="priceCents"
-                          value={priceInput}
-                          onChange={(e) => {
-                            const raw = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
-                            setPriceInput(raw);
-                            const num = parseFloat(raw);
-                            const cents = Number.isFinite(num) ? Math.max(0, Math.round(num * 100)) : 0;
-                            setDraft((p) => ({ ...p, priceCents: cents }));
-                          }}
-                          inputMode="decimal"
-                          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                          placeholder="65.00"
-                        />
-                        <div className="text-xs text-zinc-600">
-                          Vista:{" "}
-                          {formatMoney(Number(draft.priceCents) || 0, { currency: draft.currency })}
+                    <div className="grid gap-2">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-2">
+                          <label className="text-sm font-semibold text-zinc-900" htmlFor="priceCents">
+                            Precio*
+                          </label>
+                          <input
+                            id="priceCents"
+                            value={priceInput}
+                            onFocus={() => {
+                              if (priceInput === "0" || priceInput === "0.00") setPriceInput("");
+                            }}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
+                              const cleaned = raw.replace(/^0+(?=\d)/, "");
+                              setPriceInput(cleaned);
+                              const num = parseFloat(cleaned);
+                              const cents = Number.isFinite(num) ? Math.max(0, Math.round(num * 100)) : 0;
+                              setDraft((p) => ({ ...p, priceCents: cents }));
+                            }}
+                            inputMode="decimal"
+                            required
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <label className="text-sm font-semibold text-zinc-900" htmlFor="currency">
+                            Moneda*
+                          </label>
+                          <select
+                            id="currency"
+                            value={draft.currency}
+                            onChange={(e) => setDraft((p) => ({ ...p, currency: e.target.value }))}
+                            required
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                          >
+                            <option value="USD">Dólares (USD)</option>
+                            <option value="VES">Bolívares (Bs)</option>
+                          </select>
                         </div>
                       </div>
-                      <div className="grid gap-2">
-                        <label className="text-sm font-semibold text-zinc-900" htmlFor="currency">
-                          Moneda
-                        </label>
-                        <select
-                          id="currency"
-                          value={draft.currency}
-                          onChange={(e) => setDraft((p) => ({ ...p, currency: e.target.value }))}
-                          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                        >
-                          <option value="USD">Dólares (USD)</option>
-                          <option value="VES">Bolívares (Bs)</option>
-                        </select>
+                      <div className="text-xs text-zinc-600">
+                        Vista: {formatMoney(Number(draft.priceCents) || 0, { currency: draft.currency })}
                       </div>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="grid gap-2">
-                        <label
-                          className="text-sm font-semibold text-zinc-900"
-                          htmlFor="inventoryQty"
-                        >
-                          Inventario (cantidad)
-                        </label>
-                        <input
-                          id="inventoryQty"
-                          value={String(draft.inventoryQty ?? 0)}
-                          onChange={(e) =>
-                            setDraft((p) => ({ ...p, inventoryQty: Number(e.target.value) }))
-                          }
-                          inputMode="numeric"
-                          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                          placeholder="0"
-                        />
-                      </div>
+                    <div className={["grid gap-3", shouldTrackInventory ? "sm:grid-cols-2" : ""].join(" ")}>
                       <div className="grid gap-2">
                         <label className="text-sm font-semibold text-zinc-900" htmlFor="stockStatus">
-                          Estado
+                          Estado*
                         </label>
                         <select
                           id="stockStatus"
                           value={draft.stockStatus}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const next = e.target.value as Product["stockStatus"];
                             setDraft((p) => ({
                               ...p,
-                              stockStatus: e.target.value as Product["stockStatus"],
-                            }))
-                          }
-                          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                              stockStatus: next,
+                              inventoryQty:
+                                next === "in_stock"
+                                  ? typeof p.inventoryQty === "number"
+                                    ? p.inventoryQty
+                                    : 0
+                                  : undefined,
+                            }));
+                            if (next !== "in_stock") setInventoryInput("");
+                          }}
+                          required
+                          className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
                         >
-                          <option value="in_stock">En stock</option>
                           <option value="on_request">Bajo pedido</option>
+                          <option value="in_stock">En stock</option>
                         </select>
                       </div>
+
+                      {shouldTrackInventory ? (
+                        <div className="grid gap-2">
+                          <label
+                            className="text-sm font-semibold text-zinc-900"
+                            htmlFor="inventoryQty"
+                          >
+                            Inventario (cantidad)*
+                          </label>
+                          <input
+                            id="inventoryQty"
+                            value={inventoryInput}
+                            onFocus={() => {
+                              if (inventoryInput === "0") setInventoryInput("");
+                            }}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/[^0-9]/g, "");
+                              const cleaned = raw.replace(/^0+(?=\d)/, "");
+                              setInventoryInput(cleaned);
+                              const qty = cleaned ? Math.max(0, Math.trunc(Number(cleaned))) : 0;
+                              setDraft((p) => ({ ...p, inventoryQty: qty }));
+                            }}
+                            inputMode="numeric"
+                            required
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                            placeholder="0"
+                          />
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="grid gap-2">
                       <label className="text-sm font-semibold text-zinc-900" htmlFor="summary">
-                        Descripción corta
+                        Descripción corta*
                       </label>
                       <textarea
                         id="summary"
                         value={draft.summary}
                         onChange={(e) => setDraft((p) => ({ ...p, summary: e.target.value }))}
+                        required
                         className="min-h-[90px] w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
                         placeholder="Kit delantero. Verifica compatibilidad..."
                       />
+                    </div>
+
+                    <div className="rounded-2xl border border-rose-100 bg-rose-50/40 p-4">
+                      <div className="text-sm font-semibold text-rose-700">Especificaciones</div>
+                      <div className="mt-3 grid gap-2">
+                        {(draft.specs ?? []).map((s, idx) => (
+                          <div key={`${idx}`} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                            <select
+                              value={s.label}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setDraft((p) => ({
+                                  ...p,
+                                  specs: (p.specs ?? []).map((x, i) => (i === idx ? { ...x, label: value } : x)),
+                                }));
+                              }}
+                              className="h-10 w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm text-zinc-900"
+                            >
+                              {s.label && !specLabelOptions.includes(s.label as (typeof specLabelOptions)[number]) ? (
+                                <option value={s.label}>{s.label}</option>
+                              ) : null}
+                              <option value="">Selecciona</option>
+                              {specLabelOptions.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              value={s.value}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setDraft((p) => ({
+                                  ...p,
+                                  specs: (p.specs ?? []).map((x, i) => (i === idx ? { ...x, value } : x)),
+                                }));
+                              }}
+                              className="h-10 w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm text-zinc-900"
+                              placeholder="3"
+                            />
+                            <button
+                              type="button"
+                              className="h-10 rounded-lg border border-rose-200 bg-white px-3 text-sm font-semibold text-rose-700 hover:bg-rose-100"
+                              onClick={() => {
+                                setDraft((p) => ({
+                                  ...p,
+                                  specs: (p.specs ?? []).filter((_, i) => i !== idx),
+                                }));
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100"
+                          onClick={() => {
+                            const used = new Set((draft.specs ?? []).map((x) => x.label));
+                            const nextLabel = specLabelOptions.find((x) => !used.has(x)) ?? "";
+                            setDraft((p) => ({ ...p, specs: [...(p.specs ?? []), { label: nextLabel, value: "" }] }));
+                          }}
+                        >
+                          Agregar especificación
+                        </button>
+                      </div>
                     </div>
 
                     <div className="grid gap-2">
@@ -976,48 +1837,137 @@ export function AdminClient() {
                       >
                         Compatibilidad (separada por comas)
                       </label>
+                      <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <div className="grid gap-1.5">
+                            <div className="text-xs font-semibold text-zinc-700">Marca</div>
+                            <select
+                              value={compatBrand}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setCompatBrand(value);
+                                setCompatModel("");
+                              }}
+                              className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                            >
+                              <option value="">Selecciona</option>
+                              {popularVehicleBrands.map((b) => (
+                                <option key={b} value={b}>
+                                  {b}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="grid gap-1.5">
+                            <div className="text-xs font-semibold text-zinc-700">Tipo</div>
+                            <select
+                              value={compatBodyStyle}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setCompatBodyStyle(value);
+                                setCompatModel("");
+                              }}
+                              className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                            >
+                              <option value="">Selecciona</option>
+                              {vehicleBodyStyles.map((t) => (
+                                <option key={t} value={t}>
+                                  {t}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="grid gap-1.5">
+                            <div className="text-xs font-semibold text-zinc-700">Modelo</div>
+                            <select
+                              value={compatModel}
+                              onChange={(e) => setCompatModel(e.target.value)}
+                              disabled={!compatBrand || !compatBodyStyle}
+                              className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 disabled:bg-zinc-100"
+                            >
+                              <option value="">Selecciona</option>
+                              {compatModelOptions.length ? (
+                                compatModelOptions.map((m) => (
+                                  <option key={m} value={m}>
+                                    {m}
+                                  </option>
+                                ))
+                              ) : (
+                                <option value="" disabled>
+                                  No hay opciones
+                                </option>
+                              )}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+                            disabled={!compatBrand || !compatBodyStyle || !compatModel}
+                            onClick={() => {
+                              if (!compatBrand || !compatBodyStyle || !compatModel) return;
+                              const token = `${compatBrand} ${compatModel} (${compatBodyStyle})`;
+                              const current = parseCompatibleWith(compatibleWithText) ?? [];
+                              const exists = current.some((x) => x.trim().toLowerCase() === token.trim().toLowerCase());
+                              if (exists) return;
+                              setCompatibleWithText([...current, token].join(", "));
+                              setCompatModel("");
+                            }}
+                          >
+                            Agregar
+                          </button>
+                        </div>
+                      </div>
                       <input
                         id="compatibleWith"
                         value={compatibleWithText}
                         onChange={(e) => setCompatibleWithText(e.target.value)}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                        className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
                         placeholder="Sedán, Hatchback, SUV"
                       />
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between border-t border-zinc-200 px-5 py-4">
-                  {isEditingExisting ? (
-                    <button
-                      type="button"
-                      onClick={remove}
-                      className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
-                      disabled={state === "loading"}
-                    >
-                      Eliminar
-                    </button>
-                  ) : (
-                    <div />
-                  )}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowPanel(false)}
-                      className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={save}
-                      className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:brightness-90"
-                      disabled={state === "loading"}
-                    >
-                      Guardar
-                    </button>
-                  </div>
-                </div>
+            <div className="flex items-center justify-between border-t border-zinc-200 px-5 py-4">
+              {isEditingExisting ? (
+                <button
+                  type="button"
+                  onClick={remove}
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
+                  disabled={state === "loading"}
+                >
+                  Eliminar
+                </button>
+              ) : (
+                <div />
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPanel(false)}
+                  className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={save}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:brightness-90"
+                  disabled={state === "loading"}
+                >
+                  Guardar
+                </button>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {savedNotice ? (
+        <div className="fixed inset-0 z-50 grid place-items-center">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-4 text-sm font-semibold text-emerald-900 shadow-2xl">
+            {savedNotice}
+          </div>
         </div>
       ) : null}
     </Container>

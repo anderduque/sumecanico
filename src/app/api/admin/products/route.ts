@@ -28,6 +28,15 @@ function isProductPayload(x: unknown): x is Product {
     if (p.inventoryQty < 0) return false;
   }
   if (p.compatibleWith !== undefined && !Array.isArray(p.compatibleWith)) return false;
+  if (p.specs !== undefined) {
+    if (!Array.isArray(p.specs)) return false;
+    for (const s of p.specs) {
+      if (!s || typeof s !== "object") return false;
+      const item = s as { label?: unknown; value?: unknown };
+      if (typeof item.label !== "string") return false;
+      if (typeof item.value !== "string") return false;
+    }
+  }
   return true;
 }
 
@@ -69,4 +78,3 @@ export async function DELETE(request: Request) {
   await deleteProduct(slug);
   return NextResponse.json({ ok: true });
 }
-

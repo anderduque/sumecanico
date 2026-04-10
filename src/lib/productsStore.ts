@@ -22,6 +22,15 @@ function isProduct(x: unknown): x is Product {
     if (p.inventoryQty < 0) return false;
   }
   if (p.compatibleWith !== undefined && !Array.isArray(p.compatibleWith)) return false;
+  if (p.specs !== undefined) {
+    if (!Array.isArray(p.specs)) return false;
+    for (const s of p.specs) {
+      if (!s || typeof s !== "object") return false;
+      const item = s as { label?: unknown; value?: unknown };
+      if (typeof item.label !== "string") return false;
+      if (typeof item.value !== "string") return false;
+    }
+  }
   return true;
 }
 
@@ -85,10 +94,19 @@ export async function getProducts(): Promise<Product[]> {
 export async function getProductBySlug(slug: string): Promise<Product | undefined> {
   const db = getFirestoreDb();
   if (db) {
-    const doc = await db.collection("products").doc(slug).get();
-    if (!doc.exists) return undefined;
-    const data = doc.data() as unknown;
-    return isProduct(data) ? data : undefined;
+    const byId = await db.collection("products").doc(slug).get();
+    if (byId.exists) {
+      const data = byId.data() as unknown;
+      return isProduct(data) ? data : undefined;
+    }
+
+    const snap = await db
+      .collection("products")
+      .where("slug", "==", slug)
+      .limit(1)
+      .get();
+    const found = snap.docs[0]?.data() as unknown;
+    return isProduct(found) ? found : undefined;
   }
 
   const list = await getProducts();
@@ -107,6 +125,9 @@ export async function saveProducts(nextProducts: Product[]) {
       imageUrl: p.imageUrl?.trim() ? p.imageUrl.trim() : undefined,
       inventoryQty:
         typeof p.inventoryQty === "number" ? Math.max(0, Math.trunc(p.inventoryQty)) : undefined,
+      specs:
+        p.specs?.map((s) => ({ label: s.label.trim(), value: s.value.trim() })).filter((s) => s.label && s.value) ??
+        undefined,
     }));
 
   const bySlug = new Map<string, Product>();
@@ -150,6 +171,9 @@ export async function upsertProduct(next: Product) {
     imageUrl: next.imageUrl?.trim() ? next.imageUrl.trim() : undefined,
     inventoryQty:
       typeof next.inventoryQty === "number" ? Math.max(0, Math.trunc(next.inventoryQty)) : undefined,
+    specs:
+      next.specs?.map((s) => ({ label: s.label.trim(), value: s.value.trim() })).filter((s) => s.label && s.value) ??
+      undefined,
   };
 
   const db = getFirestoreDb();

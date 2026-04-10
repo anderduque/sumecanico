@@ -9,4 +9,5 @@ export type Product = {
   stockStatus: "in_stock" | "on_request";
   inventoryQty?: number;
   compatibleWith?: string[];
+  specs?: { label: string; value: string }[];
 };

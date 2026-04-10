@@ -5,10 +5,12 @@ export function formatMoney(
   const currency = options?.currency ?? "USD";
   const locale = options?.locale ?? "es-ES";
   const value = amountCents / 100;
+  const absCents = Math.abs(Math.round(amountCents));
+  const hasDecimals = absCents % 100 !== 0;
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: 2,
   }).format(value);
 }
-

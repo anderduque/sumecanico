@@ -68,6 +68,22 @@ export default async function ProductoPage({ params }: { params: { slug: string 
 
             <p className="mt-4 text-sm leading-6 text-zinc-700">{product.summary}</p>
 
+            {product.specs?.length ? (
+              <div className="mt-6 rounded-2xl border border-rose-100 bg-rose-50/40 p-5">
+                <div className="text-sm font-semibold text-rose-700">Especificaciones</div>
+                <dl className="mt-3 divide-y divide-rose-100">
+                  {product.specs
+                    .filter((s) => s.label.trim() && s.value.trim())
+                    .map((s) => (
+                      <div key={`${s.label}-${s.value}`} className="grid grid-cols-2 gap-4 py-2 text-sm">
+                        <dt className="text-zinc-700">{s.label}</dt>
+                        <dd className="text-right font-semibold text-zinc-900">{s.value}</dd>
+                      </div>
+                    ))}
+                </dl>
+              </div>
+            ) : null}
+
             {product.compatibleWith?.length ? (
               <div className="mt-6">
                 <div className="text-sm font-semibold text-zinc-900">Compatibilidad</div>
