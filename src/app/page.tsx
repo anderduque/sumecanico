@@ -2,12 +2,16 @@ import Link from "next/link";
 import { Container } from "@/components/Container";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
-import { products, services } from "@/lib/catalog";
+import { services } from "@/lib/catalog";
 import { formatMoney } from "@/lib/money";
+import { getProducts } from "@/lib/productsStore";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+export default async function Home() {
   const featuredServices = services.slice(0, 3);
-  const featuredProducts = products.slice(0, 3);
+  const featuredProducts = (await getProducts()).slice(0, 3);
 
   return (
     <div className="bg-white">
@@ -15,13 +19,15 @@ export default function Home() {
         <Container className="py-14 sm:py-20">
           <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
             <div className="lg:col-span-7">
-              <h1 className="text-3xl font-semibold tracking-tight text-zinc-950 sm:text-5xl">
-                Taller mecánico + repuestos con cotización rápida por WhatsApp
+              <h1 className="bg-gradient-to-r from-primary to-zinc-950 bg-clip-text text-3xl font-semibold tracking-tight text-transparent sm:text-5xl">
+                Taller mecánico y repuestos en un solo lugar
               </h1>
+              <div className="mt-3 text-base font-semibold text-zinc-900 sm:text-lg">
+                Cotiza al instante por WhatsApp <span aria-hidden="true">⚡</span>
+              </div>
               <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-700 sm:text-lg">
-                Agenda servicios de mantenimiento, diagnóstico y reparaciones. En la
-                tienda encuentras repuestos y puedes pedir disponibilidad y precio en
-                minutos.
+                Agenda mantenimientos, diagnósticos y reparaciones sin perder tiempo.
+                Consulta disponibilidad y precios en minutos, directo desde tu celular.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <WhatsAppLink message="Hola, quiero cotizar un servicio para mi vehículo." />
@@ -86,7 +92,7 @@ export default function Home() {
             </div>
             <Link
               href="/servicios"
-              className="text-sm font-semibold text-zinc-900 hover:underline"
+              className="text-sm font-semibold text-primary hover:underline"
             >
               Ver todos
             </Link>
@@ -102,7 +108,7 @@ export default function Home() {
                 <p className="mt-2 text-sm text-zinc-700">{s.summary}</p>
                 <Link
                   href="/servicios"
-                  className="mt-4 inline-flex text-sm font-semibold text-zinc-900 hover:underline"
+                  className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline"
                 >
                   Ver detalles
                 </Link>
@@ -123,7 +129,7 @@ export default function Home() {
             </div>
             <Link
               href="/tienda"
-              className="text-sm font-semibold text-zinc-900 hover:underline"
+              className="text-sm font-semibold text-primary hover:underline"
             >
               Ir a la tienda
             </Link>
@@ -135,6 +141,16 @@ export default function Home() {
                 key={p.slug}
                 className="rounded-xl border border-zinc-200 bg-white p-5"
               >
+                {p.imageUrl ? (
+                  <div className="mb-4 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                    <img
+                      src={p.imageUrl}
+                      alt={p.name}
+                      className="h-40 w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : null}
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="text-base font-semibold text-zinc-950">
@@ -150,7 +166,7 @@ export default function Home() {
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <Link
                     href={`/tienda/${p.slug}`}
-                    className="text-sm font-semibold text-zinc-900 hover:underline"
+                    className="text-sm font-semibold text-primary hover:underline"
                   >
                     Ver producto
                   </Link>

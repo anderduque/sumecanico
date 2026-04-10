@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s | Sumecánico",
   },
   description:
-    "Servicios de mecánica automotriz y venta de repuestos. Cotiza por WhatsApp y agenda tu visita.",
+    "Taller mecánico y repuestos en un solo lugar. Cotiza al instante por WhatsApp. Agenda mantenimientos, diagnósticos y reparaciones sin perder tiempo. Consulta disponibilidad y precios en minutos, directo desde tu celular.",
 };
 
 export default function RootLayout({

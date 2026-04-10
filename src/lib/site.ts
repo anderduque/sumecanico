@@ -5,8 +5,9 @@ export const site = {
   instagramUrl: "https://www.instagram.com/sumecanico/",
   whatsappPhoneE164: "+584144058359",
   email: "contacto@sumecanico.com",
-  addressLine: "Dirección por confirmar",
-  cityLine: "Ciudad por confirmar",
+  addressLine: "Calle Michelena entre Anzoátegui y Briceño Méndez",
+  cityLine: "Valencia, Carabobo",
+  googleMapsUrl: "https://maps.app.goo.gl/RJBu484Hn3jEXCYC9",
   openingHours: [
     { label: "Lunes a Viernes", value: "08:00 – 18:00" },
     { label: "Sábado", value: "08:00 – 13:00" },

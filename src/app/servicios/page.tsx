@@ -12,7 +12,7 @@ export default function ServiciosPage() {
     <Container className="py-10 sm:py-14">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-950 sm:text-3xl">
+          <h1 className="bg-gradient-to-r from-primary to-zinc-950 bg-clip-text text-2xl font-semibold text-transparent sm:text-3xl">
             Servicios
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-zinc-700">

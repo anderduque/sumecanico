@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/cart/CartProvider";
 import { Container } from "@/components/Container";
-import { products } from "@/lib/catalog";
 import { formatMoney } from "@/lib/money";
 import { whatsAppWaMeUrl } from "@/lib/site";
+import type { Product } from "@/lib/productTypes";
 
 function buildOrderMessage(lines: { name: string; quantity: number }[]) {
   const itemsText = lines
@@ -18,16 +18,39 @@ function buildOrderMessage(lines: { name: string; quantity: number }[]) {
 export default function CarritoPage() {
   const { lines, totalItems, remove, setQuantity, clear } = useCart();
   const [note, setNote] = useState("");
+  const [productsBySlug, setProductsBySlug] = useState<Record<string, Product>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/products", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: unknown) => {
+        if (cancelled) return;
+        const list = Array.isArray(data) ? (data as Product[]) : [];
+        const map: Record<string, Product> = {};
+        for (const p of list) {
+          if (p && typeof p.slug === "string") map[p.slug] = p;
+        }
+        setProductsBySlug(map);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setProductsBySlug({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const enriched = useMemo(() => {
     return lines
       .map((l) => {
-        const product = products.find((p) => p.slug === l.productSlug);
+        const product = productsBySlug[l.productSlug];
         if (!product) return null;
         return { product, quantity: l.quantity };
       })
       .filter((x) => x !== null);
-  }, [lines]);
+  }, [lines, productsBySlug]);
 
   const total = useMemo(() => {
     return enriched.reduce((sum, line) => sum + line.product.priceCents * line.quantity, 0);
@@ -46,13 +69,15 @@ export default function CarritoPage() {
     <Container className="py-10 sm:py-14">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-950 sm:text-3xl">Carrito</h1>
+          <h1 className="bg-gradient-to-r from-primary to-zinc-950 bg-clip-text text-2xl font-semibold text-transparent sm:text-3xl">
+            Carrito
+          </h1>
           <p className="mt-2 max-w-2xl text-sm text-zinc-700">
             Revisa cantidades y envía el pedido por WhatsApp. Confirmamos compatibilidad y
             disponibilidad antes de finalizar.
           </p>
         </div>
-        <Link href="/tienda" className="text-sm font-semibold text-zinc-900 hover:underline">
+        <Link href="/tienda" className="text-sm font-semibold text-primary hover:underline">
           Seguir comprando
         </Link>
       </div>
@@ -79,6 +104,11 @@ export default function CarritoPage() {
               <div className="border-b border-zinc-200 px-6 py-4 text-sm font-semibold text-zinc-950">
                 Productos
               </div>
+              {Object.keys(productsBySlug).length === 0 ? (
+                <div className="px-6 py-4 text-sm text-zinc-600">
+                  Cargando precios…
+                </div>
+              ) : null}
               <div className="divide-y divide-zinc-200">
                 {enriched.map((line) => (
                   <div key={line.product.slug} className="px-6 py-5">

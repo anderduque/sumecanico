@@ -4,25 +4,24 @@ import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { Container } from "@/components/Container";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
-import { getProductBySlug, products } from "@/lib/catalog";
 import { formatMoney } from "@/lib/money";
+import { getProductBySlug } from "@/lib/productsStore";
 
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
-}
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
   params: { slug: string };
-}): Metadata {
-  const product = getProductBySlug(params.slug);
+}): Promise<Metadata> {
+  const product = await getProductBySlug(params.slug);
   if (!product) return { title: "Producto" };
   return { title: product.name, description: product.summary };
 }
 
-export default function ProductoPage({ params }: { params: { slug: string } }) {
-  const product = getProductBySlug(params.slug);
+export default async function ProductoPage({ params }: { params: { slug: string } }) {
+  const product = await getProductBySlug(params.slug);
   if (!product) notFound();
 
   const stockLabel =
@@ -31,10 +30,10 @@ export default function ProductoPage({ params }: { params: { slug: string } }) {
   return (
     <Container className="py-10 sm:py-14">
       <div className="flex items-center justify-between gap-4">
-        <Link href="/tienda" className="text-sm font-semibold text-zinc-900 hover:underline">
+        <Link href="/tienda" className="text-sm font-semibold text-primary hover:underline">
           ← Volver a la tienda
         </Link>
-        <Link href="/carrito" className="text-sm font-semibold text-zinc-900 hover:underline">
+        <Link href="/carrito" className="text-sm font-semibold text-primary hover:underline">
           Ir al carrito
         </Link>
       </div>
@@ -44,7 +43,17 @@ export default function ProductoPage({ params }: { params: { slug: string } }) {
           <div className="rounded-2xl border border-zinc-200 bg-white p-6">
             <div className="flex flex-col gap-2">
               <div className="text-sm text-zinc-600">{product.category}</div>
-              <h1 className="text-2xl font-semibold text-zinc-950 sm:text-3xl">
+              {product.imageUrl ? (
+                <div className="mt-2 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="h-64 w-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              ) : null}
+              <h1 className="bg-gradient-to-r from-primary to-zinc-950 bg-clip-text text-2xl font-semibold text-transparent sm:text-3xl">
                 {product.name}
               </h1>
               <div className="flex flex-wrap items-center gap-3">
@@ -65,7 +74,7 @@ export default function ProductoPage({ params }: { params: { slug: string } }) {
                 <ul className="mt-2 space-y-2 text-sm text-zinc-700">
                   {product.compatibleWith.map((x) => (
                     <li key={x} className="flex gap-2">
-                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-900" />
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                       <span>{x}</span>
                     </li>
                   ))}
@@ -97,4 +106,3 @@ export default function ProductoPage({ params }: { params: { slug: string } }) {
     </Container>
   );
 }
-

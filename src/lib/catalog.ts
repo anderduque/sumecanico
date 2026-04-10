@@ -5,17 +5,6 @@ export type Service = {
   details: string[];
 };
 
-export type Product = {
-  slug: string;
-  name: string;
-  summary: string;
-  category: string;
-  priceCents: number;
-  currency: string;
-  stockStatus: "in_stock" | "on_request";
-  compatibleWith?: string[];
-};
-
 export const services: Service[] = [
   {
     slug: "diagnostico",
@@ -59,51 +48,6 @@ export const services: Service[] = [
   },
 ];
 
-export const products: Product[] = [
-  {
-    slug: "filtro-aceite-universal",
-    name: "Filtro de aceite (universal)",
-    summary: "Filtro para mantenimiento básico. Compatibilidad según modelo.",
-    category: "Filtros",
-    priceCents: 2500_00,
-    currency: "USD",
-    stockStatus: "on_request",
-  },
-  {
-    slug: "pastillas-freno-delanteras",
-    name: "Pastillas de freno delanteras",
-    summary: "Kit delantero. Verifica compatibilidad con tu vehículo.",
-    category: "Frenos",
-    priceCents: 6500_00,
-    currency: "USD",
-    stockStatus: "on_request",
-    compatibleWith: ["Sedán", "Hatchback", "SUV (según referencia)"],
-  },
-  {
-    slug: "bujias-kit-4",
-    name: "Bujías (kit x4)",
-    summary: "Kit de bujías para encendido. Tipo según motor.",
-    category: "Encendido",
-    priceCents: 4800_00,
-    currency: "USD",
-    stockStatus: "on_request",
-  },
-  {
-    slug: "correa-distribucion",
-    name: "Correa de distribución",
-    summary: "Repuesto crítico. Incluye recomendación de cambio por kilometraje.",
-    category: "Motor",
-    priceCents: 12000_00,
-    currency: "USD",
-    stockStatus: "on_request",
-  },
-];
-
 export function getServiceBySlug(slug: string) {
   return services.find((s) => s.slug === slug);
 }
-
-export function getProductBySlug(slug: string) {
-  return products.find((p) => p.slug === slug);
-}
-
