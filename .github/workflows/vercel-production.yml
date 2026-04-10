@@ -1,6 +1,9 @@
 name: Vercel Production Deployment
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -13,7 +16,7 @@ env:
 jobs:
   Deploy-Production:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'push' || (github.event.pull_request.merged == true)
     steps:
       - uses: actions/checkout@v2
 
