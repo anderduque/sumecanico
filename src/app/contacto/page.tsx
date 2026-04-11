@@ -42,7 +42,7 @@ export default function ContactoPage() {
       <section className="relative isolate overflow-hidden bg-zinc-950 text-white">
         <div className="absolute inset-0">
           <Image
-            src="/module-contact-hero.png"
+            src="/module-contact-hero-v2.png"
             alt="Atención y contacto del taller"
             fill
             className="object-cover"
