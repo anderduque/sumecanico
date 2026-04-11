@@ -5,6 +5,7 @@ import { CartProvider } from "@/cart/CartProvider";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
+import { RoutePrefetch } from "@/components/RoutePrefetch";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
     >
       <body className="min-h-full overflow-x-hidden flex flex-col">
         <CartProvider>
+          <RoutePrefetch />
           <Header />
           <main className="flex-1 pb-24 md:pb-0">{children}</main>
           <FloatingWhatsApp />
