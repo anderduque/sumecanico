@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/Container";
+import { ServiceFaqAccordion } from "@/components/ServiceFaqAccordion";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getServiceBySlug, services } from "@/lib/catalog";
 
@@ -173,21 +174,8 @@ export default async function ServicioDetallePage({
               </p>
             </div>
 
-            <div className="lg:col-span-7 space-y-4">
-              {service.faqs.map((faq, index) => (
-                <details
-                  key={faq.question}
-                  className="group border border-zinc-200 bg-white open:border-primary"
-                  open={index === 0}
-                >
-                  <summary className="cursor-pointer list-none bg-primary px-5 py-4 text-base font-semibold text-white marker:content-none">
-                    {faq.question}
-                  </summary>
-                  <div className="border-t border-zinc-200 px-5 py-4 text-sm leading-7 text-zinc-700">
-                    {faq.answer}
-                  </div>
-                </details>
-              ))}
+            <div className="lg:col-span-7">
+              <ServiceFaqAccordion faqs={service.faqs} />
             </div>
           </div>
         </Container>
