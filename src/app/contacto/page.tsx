@@ -37,6 +37,10 @@ function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export default function ContactoPage() {
+  const mapsQuery = encodeURIComponent(`${site.addressLine}, ${site.cityLine}`);
+  const googleEmbedUrl = `https://maps.google.com/maps?q=${mapsQuery}&t=m&z=16&output=embed`;
+  const appleMapsUrl = `https://maps.apple.com/?q=${mapsQuery}`;
+
   return (
     <div className="bg-white">
       <section className="relative isolate overflow-hidden bg-zinc-950 text-white">
@@ -217,15 +221,34 @@ export default function ContactoPage() {
               </h2>
             </div>
 
-            <div className="lg:col-span-7 overflow-hidden border border-zinc-200">
+            <div className="lg:col-span-7 overflow-hidden border border-zinc-200 bg-white">
               <div className="relative aspect-[16/9] w-full">
                 <iframe
                   title="Mapa de ubicación"
-                  src={`https://www.google.com/maps?q=${encodeURIComponent(`${site.addressLine}, ${site.cityLine}`)}&output=embed`}
+                  src={googleEmbedUrl}
                   className="h-full w-full"
-                  loading="lazy"
+                  loading="eager"
+                  allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"
                 />
+              </div>
+              <div className="flex flex-col gap-3 border-t border-zinc-200 p-4 sm:flex-row">
+                <a
+                  className="inline-flex items-center justify-center border border-primary bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
+                  href={site.googleMapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Abrir en Google Maps
+                </a>
+                <a
+                  className="inline-flex items-center justify-center border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50"
+                  href={appleMapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Abrir en Apple Maps
+                </a>
               </div>
             </div>
           </div>

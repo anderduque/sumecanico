@@ -407,7 +407,7 @@ export function AdminClient() {
 
   const [tab, setTab] = useState<"dashboard" | "products" | "payments">("dashboard");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [paymentsState, setPaymentsState] = useState<LoadState>("idle");
+  const [, setPaymentsState] = useState<LoadState>("idle");
   const [paymentsError, setPaymentsError] = useState<string | null>(null);
   const [paymentsSaved, setPaymentsSaved] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -475,6 +475,7 @@ export function AdminClient() {
 
   function bumpActivity() {
     try {
+      // eslint-disable-next-line react-hooks/purity
       sessionStorage.setItem(sessionLastActiveKey, String(Date.now()));
     } catch {}
   }
@@ -508,7 +509,8 @@ export function AdminClient() {
     setShowPaymentModal(true);
   }
 
-  function upsertPaymentMethodFromDraft() {
+  async function upsertPaymentMethodFromDraft() {
+    if (!authHeader) return;
     const name = paymentDraft.name.trim();
     if (!name) {
       setPaymentDraftError("El nombre es requerido.");
@@ -536,42 +538,89 @@ export function AdminClient() {
       return;
     }
 
-    if (paymentModalMode === "edit" && paymentEditIndex !== null) {
-      setPaymentMethods((prev) =>
-        prev.map((m, i) =>
-          i === paymentEditIndex
-            ? {
-                ...m,
-                id: derivedId,
-                name,
-                details:
-                  draftKind === "pago-movil"
-                    ? setBankInDetails(paymentDraft.details ?? "", paymentDraftBank || getBankFromDetails(paymentDraft.details ?? ""))
-                    : (paymentDraft.details ?? ""),
-                enabled: !!paymentDraft.enabled,
-                sort: Number.isFinite(paymentDraft.sort) ? Math.trunc(paymentDraft.sort) : 0,
-              }
-            : m,
-        ),
-      );
-    } else {
-      setPaymentMethods((prev) => [
-        ...prev,
-        {
-        id: derivedId,
-        name,
-          details:
-            draftKind === "pago-movil"
-              ? setBankInDetails(paymentDraft.details ?? "", paymentDraftBank || getBankFromDetails(paymentDraft.details ?? ""))
-              : (paymentDraft.details ?? ""),
-        enabled: !!paymentDraft.enabled,
-        sort: Number.isFinite(paymentDraft.sort) ? Math.trunc(paymentDraft.sort) : 0,
-      },
-      ]);
-    }
-    setPaymentsSaved(false);
-    setShowPaymentModal(false);
+    const nextMethods =
+      paymentModalMode === "edit" && paymentEditIndex !== null
+        ? paymentMethods.map((m, i) =>
+            i === paymentEditIndex
+              ? {
+                  ...m,
+                  id: derivedId,
+                  name,
+                  details:
+                    draftKind === "pago-movil"
+                      ? setBankInDetails(paymentDraft.details ?? "", paymentDraftBank || getBankFromDetails(paymentDraft.details ?? ""))
+                      : (paymentDraft.details ?? ""),
+                  enabled: !!paymentDraft.enabled,
+                  sort: Number.isFinite(paymentDraft.sort) ? Math.trunc(paymentDraft.sort) : 0,
+                }
+              : m,
+          )
+        : [
+            ...paymentMethods,
+            {
+              id: derivedId,
+              name,
+              details:
+                draftKind === "pago-movil"
+                  ? setBankInDetails(paymentDraft.details ?? "", paymentDraftBank || getBankFromDetails(paymentDraft.details ?? ""))
+                  : (paymentDraft.details ?? ""),
+              enabled: !!paymentDraft.enabled,
+              sort: Number.isFinite(paymentDraft.sort) ? Math.trunc(paymentDraft.sort) : 0,
+            },
+          ];
+
+    setPaymentMethods(nextMethods);
     setPaymentDraftError(null);
+    setShowPaymentModal(false);
+    await savePaymentMethods(nextMethods, paymentModalMode === "edit" ? "Método actualizado." : "Método agregado.");
+  }
+
+  async function savePaymentMethods(nextMethodsArg?: PaymentMethod[], successMessage = "Métodos de pago guardados.") {
+    if (!authHeader) return;
+    setPaymentsState("loading");
+    setPaymentsError(null);
+    setPaymentsSaved(false);
+
+    const source = nextMethodsArg ?? paymentMethods;
+    const normalized: PaymentMethod[] = source
+      .map((m, idx) => ({
+        id: m.id.trim(),
+        name: m.name.trim(),
+        details: m.details ?? "",
+        enabled: !!m.enabled,
+        sort: Number.isFinite(m.sort) ? Math.trunc(m.sort) : (idx + 1) * 10,
+      }))
+      .filter((m) => m.id && m.name);
+
+    try {
+      const res = await fetch("/api/admin/payment-methods", {
+        method: "PUT",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(normalized),
+      });
+      if (res.status === 401) {
+        clearStoredAuth();
+        setAuthHeader(null);
+        setPaymentsState("error");
+        setPaymentsError("Credenciales inválidas o no configuradas.");
+        return;
+      }
+      if (!res.ok) {
+        setPaymentsState("error");
+        setPaymentsError("No se pudieron guardar los métodos de pago.");
+        return;
+      }
+      await loadPaymentMethods(authHeader);
+      setPaymentsSaved(true);
+      setSavedNotice(successMessage);
+      window.setTimeout(() => setSavedNotice(null), 3200);
+    } catch {
+      setPaymentsState("error");
+      setPaymentsError("No se pudieron guardar los métodos de pago.");
+    }
   }
 
   async function load(nextAuthHeader: string): Promise<boolean> {
@@ -686,51 +735,6 @@ export function AdminClient() {
     }, 5000);
     return () => window.clearInterval(intervalId);
   }, [authHeader, logout]);
-
-  async function savePaymentMethods() {
-    if (!authHeader) return;
-    setPaymentsState("loading");
-    setPaymentsError(null);
-    setPaymentsSaved(false);
-
-    const normalized: PaymentMethod[] = paymentMethods
-      .map((m, idx) => ({
-        id: m.id.trim(),
-        name: m.name.trim(),
-        details: m.details ?? "",
-        enabled: !!m.enabled,
-        sort: Number.isFinite(m.sort) ? Math.trunc(m.sort) : (idx + 1) * 10,
-      }))
-      .filter((m) => m.id && m.name);
-
-    try {
-      const res = await fetch("/api/admin/payment-methods", {
-        method: "PUT",
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(normalized),
-      });
-      if (res.status === 401) {
-        clearStoredAuth();
-        setAuthHeader(null);
-        setPaymentsState("error");
-        setPaymentsError("Credenciales inválidas o no configuradas.");
-        return;
-      }
-      if (!res.ok) {
-        setPaymentsState("error");
-        setPaymentsError("No se pudieron guardar los métodos de pago.");
-        return;
-      }
-      await loadPaymentMethods(authHeader);
-      setPaymentsSaved(true);
-    } catch {
-      setPaymentsState("error");
-      setPaymentsError("No se pudieron guardar los métodos de pago.");
-    }
-  }
 
   function selectProduct(p: Product) {
     const normalizedInventory =
@@ -1061,7 +1065,7 @@ export function AdminClient() {
       <section className="relative isolate overflow-hidden bg-zinc-950 text-white">
         <div className="absolute inset-0">
           <Image
-            src="/module-admin-hero.png"
+            src="/module-admin-hero-v2.png"
             alt="Panel administrativo"
             fill
             className="object-cover"
@@ -1300,33 +1304,31 @@ export function AdminClient() {
         </div>
       ) : null}
       {tab === "payments" ? (
-        <div className="mt-4 rounded-2xl border border-zinc-200 bg-white">
-          <div className="flex items-center justify-between gap-4 border-b border-zinc-200 px-6 py-4">
-            <div className="text-sm font-semibold text-rose-700">Métodos de pago</div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                onClick={() => loadPaymentMethods(authHeader)}
-                disabled={paymentsState === "loading"}
-              >
-                Recargar
-              </button>
-              <button
-                type="button"
-                className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:brightness-90"
-                onClick={openNewPaymentMethodModal}
-              >
-                Agregar
-              </button>
-              <button
-                type="button"
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                onClick={() => void savePaymentMethods()}
-                disabled={paymentsState === "loading"}
-              >
-                Guardar
-              </button>
+        <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white">
+          <div className="border-b border-zinc-200 px-6 py-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
+                  Configuración de cobro
+                </div>
+                <div className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-zinc-950">
+                  Métodos de pago
+                </div>
+                <p className="mt-3 text-sm leading-7 text-zinc-600 sm:text-base">
+                  Organiza las opciones visibles en checkout con una presentación más clara,
+                  datos bancarios mejor estructurados y activación rápida para cada método.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white hover:brightness-90"
+                  onClick={openNewPaymentMethodModal}
+                >
+                  Nuevo método
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1342,91 +1344,125 @@ export function AdminClient() {
               </div>
             ) : null}
 
-            <div className="grid gap-4">
+            <div className="mb-6 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                  Total
+                </div>
+                <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
+                  {paymentMethods.length}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                  Activos
+                </div>
+                <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
+                  {paymentMethods.filter((m) => m.enabled).length}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                  Checkout
+                </div>
+                <div className="mt-2 text-sm leading-7 text-zinc-700">
+                  Los cambios se publican al agregar, editar o eliminar cada método.
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {paymentMethods.map((m, idx) => {
                 const iconKey = getPaymentIconKey(m);
                 const iconUrl = getPaymentIconUrl(m);
                 return (
-                  <div key={`${m.id}-${idx}`} className="rounded-2xl border border-zinc-200 p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-zinc-200 bg-zinc-50">
-                        {iconUrl ? (
-                          <img
-                            src={iconUrl}
-                            alt=""
-                            className="h-5 w-5"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <svg
-                            viewBox="0 0 24 24"
-                            className="h-5 w-5 text-zinc-600"
-                            fill="currentColor"
-                            aria-hidden="true"
-                          >
-                            {iconKey === "zinli" ? (
-                              <path d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v9A3.5 3.5 0 0 1 16.5 20h-9A3.5 3.5 0 0 1 4 16.5v-9Zm3.5-1.5A1.5 1.5 0 0 0 6 7.5V9h12V7.5A1.5 1.5 0 0 0 16.5 6h-9ZM6 11v5.5A1.5 1.5 0 0 0 7.5 18h9a1.5 1.5 0 0 0 1.5-1.5V11H6Z" />
-                            ) : iconKey === "pago-movil" ? (
-                              <path d="M8 2.5A2.5 2.5 0 0 0 5.5 5v14A2.5 2.5 0 0 0 8 21.5h8A2.5 2.5 0 0 0 18.5 19V5A2.5 2.5 0 0 0 16 2.5H8Zm0 2h8A.5.5 0 0 1 16.5 5v14a.5.5 0 0 1-.5.5H8a.5.5 0 0 1-.5-.5V5A.5.5 0 0 1 8 4.5Zm3 14.5a1 1 0 1 0 2 0 1 1 0 0 0-2 0Z" />
-                            ) : (
-                              <path d="M12 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm-1 12h2v6h-2v-6Z" />
-                            )}
-                          </svg>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-zinc-950">
-                          {m.name?.trim() ? m.name : "Sin nombre"}
+                  <div
+                    key={`${m.id}-${idx}`}
+                    className="flex h-full flex-col rounded-[1.5rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-40px_rgba(0,0,0,0.28)]"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-zinc-200 bg-zinc-50">
+                          {iconUrl ? (
+                            <img src={iconUrl} alt="" className="h-5 w-5" loading="lazy" />
+                          ) : (
+                            <svg
+                              viewBox="0 0 24 24"
+                              className="h-5 w-5 text-zinc-600"
+                              fill="currentColor"
+                              aria-hidden="true"
+                            >
+                              {iconKey === "zinli" ? (
+                                <path d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v9A3.5 3.5 0 0 1 16.5 20h-9A3.5 3.5 0 0 1 4 16.5v-9Zm3.5-1.5A1.5 1.5 0 0 0 6 7.5V9h12V7.5A1.5 1.5 0 0 0 16.5 6h-9ZM6 11v5.5A1.5 1.5 0 0 0 7.5 18h9a1.5 1.5 0 0 0 1.5-1.5V11H6Z" />
+                              ) : iconKey === "pago-movil" ? (
+                                <path d="M8 2.5A2.5 2.5 0 0 0 5.5 5v14A2.5 2.5 0 0 0 8 21.5h8A2.5 2.5 0 0 0 18.5 19V5A2.5 2.5 0 0 0 16 2.5H8Zm0 2h8A.5.5 0 0 1 16.5 5v14a.5.5 0 0 1-.5.5H8a.5.5 0 0 1-.5-.5V5A.5.5 0 0 1 8 4.5Zm3 14.5a1 1 0 1 0 2 0 1 1 0 0 0-2 0Z" />
+                              ) : (
+                                <path d="M12 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm-1 12h2v6h-2v-6Z" />
+                              )}
+                            </svg>
+                          )}
                         </div>
-                        <div className="mt-0.5 text-xs font-semibold text-zinc-600">{m.id || "—"}</div>
-                        {iconKey === "pago-movil" ? (
-                          <div className="mt-0.5 text-xs font-semibold text-zinc-600">
-                            {getBankFromDetails(m.details ?? "") ? `Banco: ${getBankFromDetails(m.details ?? "")}` : "Banco: —"}
+                        <div className="min-w-0">
+                          <div className="text-lg font-semibold tracking-tight text-zinc-950">
+                            {m.name?.trim() ? m.name : "Sin nombre"}
                           </div>
-                        ) : null}
-                        <div className="mt-3 whitespace-pre-wrap text-sm text-zinc-700">
-                          {m.details?.trim()
-                            ? iconKey === "pago-movil"
-                              ? stripBankFromDetails(m.details)
-                              : m.details
-                            : "—"}
+                          <div className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                            {m.id || "—"}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-2">
                       <span
                         className={[
-                          "rounded-full px-2 py-1 text-xs font-semibold",
+                          "shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold",
                           m.enabled ? "bg-emerald-50 text-emerald-900" : "bg-zinc-100 text-zinc-700",
                         ].join(" ")}
                       >
                         {m.enabled ? "Activo" : "Inactivo"}
                       </span>
+                    </div>
+
+                    {iconKey === "pago-movil" ? (
+                      <div className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                        {getBankFromDetails(m.details ?? "")
+                          ? `Banco · ${getBankFromDetails(m.details ?? "")}`
+                          : "Banco · Sin definir"}
+                      </div>
+                    ) : null}
+
+                    <div className="mt-4 flex-1 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm leading-7 text-zinc-700">
+                      {m.details?.trim()
+                        ? iconKey === "pago-movil"
+                          ? stripBankFromDetails(m.details)
+                          : m.details
+                        : "Sin detalles cargados."}
+                    </div>
+
+                    <div className="mt-5 flex items-center gap-2">
                       <button
                         type="button"
-                        className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                        className="flex-1 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
                         onClick={() => openEditPaymentMethodModal(idx)}
                       >
                         Editar
                       </button>
                       <button
                         type="button"
-                        className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
-                        onClick={() => {
-                          setPaymentMethods((prev) => prev.filter((_, i) => i !== idx));
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-900 hover:bg-rose-100"
+                        onClick={async () => {
+                          const nextMethods = paymentMethods.filter((_, i) => i !== idx);
+                          setPaymentMethods(nextMethods);
                           setPaymentsSaved(false);
+                          await savePaymentMethods(nextMethods, "Método eliminado.");
                         }}
                       >
                         Eliminar
                       </button>
                     </div>
                   </div>
-                </div>
                 );
               })}
               {paymentMethods.length === 0 ? (
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-700 md:col-span-2 xl:col-span-3">
                   No hay métodos de pago.
                 </div>
               ) : null}
