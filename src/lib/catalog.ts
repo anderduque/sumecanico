@@ -2,6 +2,7 @@ export type Service = {
   slug: string;
   name: string;
   summary: string;
+  imageUrl: string;
   details: string[];
 };
 
@@ -10,6 +11,8 @@ export const services: Service[] = [
     slug: "diagnostico",
     name: "Diagnóstico computarizado",
     summary: "Lectura de fallas, sensores y sistemas electrónicos.",
+    imageUrl:
+      "/diagnostico computarizado.jpeg",
     details: [
       "Escaneo y reporte de códigos de falla",
       "Revisión de parámetros en tiempo real",
@@ -20,6 +23,8 @@ export const services: Service[] = [
     slug: "mantenimiento",
     name: "Mantenimiento preventivo",
     summary: "Servicios para alargar la vida útil del vehículo.",
+    imageUrl:
+      "/mantenimiento preventivo.jpeg",
     details: [
       "Cambio de aceite y filtros",
       "Revisión de niveles y fugas",
@@ -30,6 +35,8 @@ export const services: Service[] = [
     slug: "frenos",
     name: "Frenos y suspensión",
     summary: "Seguridad y estabilidad: revisión y reemplazos.",
+    imageUrl:
+      "/frenos y suspencion.jpeg",
     details: [
       "Cambio de pastillas/discos",
       "Revisión de amortiguadores y bujes",
@@ -40,6 +47,8 @@ export const services: Service[] = [
     slug: "electricidad",
     name: "Electricidad automotriz",
     summary: "Arranque, carga, luces, sensores y diagnósticos.",
+    imageUrl:
+      "/Electricidad automotriz.jpeg",
     details: [
       "Revisión de batería/alternador",
       "Solución de fallas eléctricas",
