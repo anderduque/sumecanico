@@ -24,13 +24,13 @@ function isPaymentMethodPayload(x: unknown): x is PaymentMethod {
 }
 
 export async function GET(request: Request) {
-  if (!isAdminRequestAuthorized(new Headers(request.headers))) return unauthorized();
+  if (!(await isAdminRequestAuthorized(new Headers(request.headers)))) return unauthorized();
   const methods = await getPaymentMethods();
   return NextResponse.json(methods, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function PUT(request: Request) {
-  if (!isAdminRequestAuthorized(new Headers(request.headers))) return unauthorized();
+  if (!(await isAdminRequestAuthorized(new Headers(request.headers)))) return unauthorized();
   const body = (await request.json()) as unknown;
   if (!Array.isArray(body) || !body.every(isPaymentMethodPayload)) {
     return NextResponse.json({ error: "invalid_payment_methods" }, { status: 400 });
@@ -38,4 +38,3 @@ export async function PUT(request: Request) {
   await savePaymentMethods(body);
   return NextResponse.json({ ok: true });
 }
-

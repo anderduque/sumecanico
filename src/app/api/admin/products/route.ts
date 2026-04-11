@@ -41,13 +41,13 @@ function isProductPayload(x: unknown): x is Product {
 }
 
 export async function GET(request: Request) {
-  if (!isAdminRequestAuthorized(new Headers(request.headers))) return unauthorized();
+  if (!(await isAdminRequestAuthorized(new Headers(request.headers)))) return unauthorized();
   const products = await getProducts();
   return NextResponse.json(products, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
-  if (!isAdminRequestAuthorized(new Headers(request.headers))) return unauthorized();
+  if (!(await isAdminRequestAuthorized(new Headers(request.headers)))) return unauthorized();
   const body = (await request.json()) as unknown;
   if (!isProductPayload(body)) {
     return NextResponse.json({ error: "invalid_product" }, { status: 400 });
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  if (!isAdminRequestAuthorized(new Headers(request.headers))) return unauthorized();
+  if (!(await isAdminRequestAuthorized(new Headers(request.headers)))) return unauthorized();
   const body = (await request.json()) as unknown;
   if (!isProductPayload(body)) {
     return NextResponse.json({ error: "invalid_product" }, { status: 400 });
@@ -71,7 +71,7 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (!isAdminRequestAuthorized(new Headers(request.headers))) return unauthorized();
+  if (!(await isAdminRequestAuthorized(new Headers(request.headers)))) return unauthorized();
   const body = (await request.json()) as unknown;
   const slug = typeof (body as { slug?: unknown })?.slug === "string" ? (body as { slug: string }).slug : "";
   if (!slug.trim()) return NextResponse.json({ error: "missing_slug" }, { status: 400 });

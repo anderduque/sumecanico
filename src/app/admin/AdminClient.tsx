@@ -53,6 +53,14 @@ function slugify(input: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function validateAdminPassword(value: string) {
+  const trimmed = value.trim();
+  if (trimmed.length < 8) return "Usa mínimo 8 caracteres.";
+  if (!/^[A-Za-z0-9]+$/.test(trimmed)) return "Usa solo letras y números (sin espacios).";
+  if (!/[A-Za-z]/.test(trimmed) || !/[0-9]/.test(trimmed)) return "Incluye al menos 1 letra y 1 número.";
+  return null;
+}
+
 const productCategoryOptions = [
   "Frenos",
   "Motor",
@@ -405,7 +413,7 @@ export function AdminClient() {
   const [priceInput, setPriceInput] = useState("");
   const [inventoryInput, setInventoryInput] = useState("");
 
-  const [tab, setTab] = useState<"dashboard" | "products" | "payments">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "products" | "payments" | "security">("dashboard");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [, setPaymentsState] = useState<LoadState>("idle");
   const [paymentsError, setPaymentsError] = useState<string | null>(null);
@@ -423,6 +431,13 @@ export function AdminClient() {
   });
   const [paymentDraftBank, setPaymentDraftBank] = useState("");
   const [paymentDraftError, setPaymentDraftError] = useState<string | null>(null);
+  const [securityCurrentPassword, setSecurityCurrentPassword] = useState("");
+  const [securityNextPassword, setSecurityNextPassword] = useState("");
+  const [securityConfirmPassword, setSecurityConfirmPassword] = useState("");
+  const [securityState, setSecurityState] = useState<LoadState>("idle");
+  const [securityError, setSecurityError] = useState<string | null>(null);
+  const [securitySaved, setSecuritySaved] = useState<string | null>(null);
+  const [securityCanPersist, setSecurityCanPersist] = useState<boolean | null>(null);
 
   const isEditingExisting = useMemo(() => {
     return !!draft.slug && products.some((p) => p.slug === draft.slug);
@@ -464,6 +479,13 @@ export function AdminClient() {
     setPaymentDraft({ id: "", name: "", details: "", enabled: true, sort: 10 });
     setPaymentDraftBank("");
     setPaymentDraftError(null);
+    setSecurityCurrentPassword("");
+    setSecurityNextPassword("");
+    setSecurityConfirmPassword("");
+    setSecurityState("idle");
+    setSecurityError(null);
+    setSecuritySaved(null);
+    setSecurityCanPersist(null);
   }, []);
 
   function clearStoredAuth() {
@@ -701,6 +723,29 @@ export function AdminClient() {
       void loadPaymentMethods(authHeader);
     }, 0);
     return () => window.clearTimeout(t);
+  }, [authHeader]);
+
+  useEffect(() => {
+    if (!authHeader) return;
+    let active = true;
+    void (async () => {
+      try {
+        const res = await fetch("/api/admin/password", { cache: "no-store" });
+        const data = (await res.json()) as unknown;
+        const canPersist =
+          typeof (data as { canPersist?: unknown })?.canPersist === "boolean"
+            ? (data as { canPersist: boolean }).canPersist
+            : null;
+        if (!active) return;
+        setSecurityCanPersist(canPersist);
+      } catch {
+        if (!active) return;
+        setSecurityCanPersist(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, [authHeader]);
 
   useEffect(() => {
@@ -958,6 +1003,78 @@ export function AdminClient() {
     }
   }
 
+  async function changeAdminPassword() {
+    const nextUser = user.trim();
+    const current = securityCurrentPassword;
+    const next = securityNextPassword;
+    const confirm = securityConfirmPassword;
+
+    setSecurityError(null);
+    setSecuritySaved(null);
+
+    if (!nextUser) {
+      setSecurityError("Falta el usuario.");
+      return;
+    }
+    if (!current) {
+      setSecurityError("Ingresa tu clave actual.");
+      return;
+    }
+    const validation = validateAdminPassword(next);
+    if (validation) {
+      setSecurityError(validation);
+      return;
+    }
+    if (next !== confirm) {
+      setSecurityError("La confirmación no coincide.");
+      return;
+    }
+
+    setSecurityState("loading");
+    try {
+      const res = await fetch("/api/admin/password", {
+        method: "PUT",
+        headers: {
+          Authorization: toAuthHeader(nextUser, current),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ newPassword: next.trim() }),
+      });
+      if (res.status === 401) {
+        setSecurityState("error");
+        setSecurityError("Clave actual incorrecta.");
+        return;
+      }
+      if (res.status === 501) {
+        setSecurityState("error");
+        setSecurityError("No hay almacenamiento persistente configurado para guardar la clave en producción.");
+        return;
+      }
+      if (!res.ok) {
+        setSecurityState("error");
+        setSecurityError("No se pudo actualizar la clave.");
+        return;
+      }
+
+      const nextAuth = toAuthHeader(nextUser, next.trim());
+      setAuthHeader(nextAuth);
+      try {
+        sessionStorage.setItem(sessionAuthKey, nextAuth);
+        sessionStorage.setItem(sessionLastActiveKey, String(Date.now()));
+      } catch {}
+
+      setSecurityCurrentPassword("");
+      setSecurityNextPassword("");
+      setSecurityConfirmPassword("");
+      setSecurityState("ready");
+      setSecuritySaved("Clave actualizada.");
+      window.setTimeout(() => setSecuritySaved(null), 3200);
+    } catch {
+      setSecurityState("error");
+      setSecurityError("No se pudo actualizar la clave.");
+    }
+  }
+
   if (!authHeader) {
     return (
       <div className="min-h-dvh bg-[linear-gradient(180deg,#121212_0%,#1a1a1a_42%,#2a0f12_100%)]">
@@ -1093,21 +1210,36 @@ export function AdminClient() {
               </div>
             </div>
             <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
-              {tab === "dashboard" ? "Dashboard de administración" : "Administración"}
+              {tab === "dashboard"
+                ? "Dashboard de administración"
+                : tab === "products"
+                ? "Repuestos"
+                : tab === "payments"
+                ? "Métodos de pago"
+                : "Seguridad"}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-8 text-zinc-200">
               {tab === "dashboard"
                 ? "Accede a los módulos principales para gestionar catálogo, pagos y configuración."
                 : tab === "products"
                 ? "Administra repuestos, imágenes, precios, compatibilidad e inventario."
-                : "Configura los métodos de pago visibles y su información operativa."}
+                : tab === "payments"
+                ? "Configura los métodos de pago visibles y su información operativa."
+                : "Actualiza la clave de acceso del módulo administrativo."}
             </p>
           </div>
         </Container>
       </section>
 
       <Container className="py-10 sm:py-14">
-      <div className="fixed right-4 top-4 z-50">
+      <div className="fixed right-4 top-4 z-50 flex items-center gap-2">
+        <button
+          type="button"
+          className="border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50"
+          onClick={() => setTab("security")}
+        >
+          Contraseña
+        </button>
         <button
           type="button"
           className="border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50"
@@ -1127,7 +1259,9 @@ export function AdminClient() {
               ? "Elige un módulo para gestionar."
               : tab === "products"
               ? "Agrega/edita repuestos con imagen, precio y cantidad."
-              : "Configura métodos de pago visibles en la tienda."}
+              : tab === "payments"
+              ? "Configura métodos de pago visibles en la tienda."
+              : "Cambia la clave de acceso del administrador."}
           </p>
         </div>
       </div>
@@ -1466,6 +1600,100 @@ export function AdminClient() {
                   No hay métodos de pago.
                 </div>
               ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {tab === "security" ? (
+        <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white">
+          <div className="border-b border-zinc-200 px-6 py-6">
+            <div className="max-w-3xl">
+              <div className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
+                Seguridad
+              </div>
+              <div className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-zinc-950">
+                Cambiar clave
+              </div>
+              <p className="mt-3 text-sm leading-7 text-zinc-600 sm:text-base">
+                La clave debe ser alfanumérica, sin espacios, e incluir letras y números.
+              </p>
+            </div>
+          </div>
+
+          <div className="px-6 py-6">
+            {securityCanPersist === false ? (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                No hay almacenamiento persistente configurado para guardar la clave.
+              </div>
+            ) : null}
+            {securityError ? (
+              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+                {securityError}
+              </div>
+            ) : null}
+            {securitySaved ? (
+              <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                {securitySaved}
+              </div>
+            ) : null}
+
+            <div className="grid max-w-xl gap-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-semibold text-zinc-900">Clave actual</label>
+                <input
+                  value={securityCurrentPassword}
+                  onChange={(e) => {
+                    setSecurityCurrentPassword(e.target.value);
+                    setSecurityError(null);
+                    setSecuritySaved(null);
+                  }}
+                  type="password"
+                  autoComplete="current-password"
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#1b4f7d] focus:ring-4 focus:ring-[#1b4f7d]/15"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-semibold text-zinc-900">Nueva clave</label>
+                <input
+                  value={securityNextPassword}
+                  onChange={(e) => {
+                    setSecurityNextPassword(e.target.value);
+                    setSecurityError(null);
+                    setSecuritySaved(null);
+                  }}
+                  type="password"
+                  autoComplete="new-password"
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#1b4f7d] focus:ring-4 focus:ring-[#1b4f7d]/15"
+                />
+                <div className="text-xs text-zinc-600">
+                  Requisitos: mínimo 8 caracteres, solo letras y números, incluye al menos 1 letra y 1 número.
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-semibold text-zinc-900">Confirmar nueva clave</label>
+                <input
+                  value={securityConfirmPassword}
+                  onChange={(e) => {
+                    setSecurityConfirmPassword(e.target.value);
+                    setSecurityError(null);
+                    setSecuritySaved(null);
+                  }}
+                  type="password"
+                  autoComplete="new-password"
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#1b4f7d] focus:ring-4 focus:ring-[#1b4f7d]/15"
+                />
+              </div>
+
+              <button
+                type="button"
+                className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white hover:brightness-90 disabled:opacity-60"
+                disabled={securityState === "loading" || securityCanPersist === false}
+                onClick={() => void changeAdminPassword()}
+              >
+                Guardar nueva clave
+              </button>
             </div>
           </div>
         </div>
