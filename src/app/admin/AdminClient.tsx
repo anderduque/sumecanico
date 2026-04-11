@@ -401,6 +401,7 @@ export function AdminClient() {
   const [compatBodyStyle, setCompatBodyStyle] = useState("");
   const [compatModel, setCompatModel] = useState("");
   const [showPanel, setShowPanel] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [priceInput, setPriceInput] = useState("");
   const [inventoryInput, setInventoryInput] = useState("");
 
@@ -745,6 +746,7 @@ export function AdminClient() {
     setCompatBrand("");
     setCompatBodyStyle("");
     setCompatModel("");
+    setShowDeleteConfirm(false);
     setPriceInput(p.priceCents ? (Math.max(0, Math.round((p.priceCents ?? 0))) / 100).toFixed(2) : "");
     setInventoryInput(typeof normalizedInventory === "number" && normalizedInventory > 0 ? String(normalizedInventory) : "");
     setError(null);
@@ -757,6 +759,7 @@ export function AdminClient() {
     setCompatBrand("");
     setCompatBodyStyle("");
     setCompatModel("");
+    setShowDeleteConfirm(false);
     setPriceInput("");
     setInventoryInput("");
     setError(null);
@@ -916,8 +919,11 @@ export function AdminClient() {
         return;
       }
       await load(authHeader);
-      startNew();
+      setShowDeleteConfirm(false);
+      setShowPanel(false);
       setState("ready");
+      setSavedNotice("Repuesto eliminado con éxito.");
+      window.setTimeout(() => setSavedNotice(null), 3200);
     } catch {
       setState("error");
       setError("No se pudo eliminar el producto.");
@@ -950,12 +956,12 @@ export function AdminClient() {
 
   if (!authHeader) {
     return (
-      <div className="min-h-dvh bg-gradient-to-b from-slate-900 via-slate-900 to-[#0b2a4a]">
+      <div className="min-h-dvh bg-[linear-gradient(180deg,#121212_0%,#1a1a1a_42%,#2a0f12_100%)]">
         <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col items-center justify-center px-4 py-10">
-          <div className="text-sm font-semibold tracking-wide text-white/80">
-            Inicio de Sesión
+          <div className="text-xs font-semibold uppercase tracking-[0.32em] text-primary/80">
+            Acceso administrativo
           </div>
-          <div className="mt-6 w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl ring-1 ring-black/5">
+          <div className="mt-6 w-full max-w-md border border-white/10 bg-white p-8 shadow-2xl shadow-black/30">
             <div className="flex justify-center">
               <div className="relative h-12 w-44">
                 <Image
@@ -968,9 +974,11 @@ export function AdminClient() {
                 />
               </div>
             </div>
-            <div className="mt-5 text-center text-4xl font-extrabold tracking-tight text-[#123b63]">
-              {site.name.toUpperCase()}
-              <span className="text-primary">.</span>
+            <div className="mt-5 text-center text-4xl font-semibold tracking-[-0.04em] text-zinc-950">
+              Panel de administración
+            </div>
+            <div className="mt-2 text-center text-sm leading-6 text-zinc-600">
+              Gestiona repuestos, pagos y configuración interna desde un solo lugar.
             </div>
 
             <form
@@ -1026,14 +1034,14 @@ export function AdminClient() {
               </label>
 
               {error ? (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+                <div className="border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
                   {error}
                 </div>
               ) : null}
 
               <button
                 type="submit"
-                className="mt-1 w-full rounded-xl bg-[#1b4f7d] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#1b4f7d]/20 hover:brightness-110 disabled:opacity-60"
+                className="mt-1 w-full bg-primary px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#981b1f] disabled:opacity-60"
                 disabled={state === "loading"}
               >
                 Iniciar Sesión
@@ -1049,11 +1057,56 @@ export function AdminClient() {
   }
 
   return (
-    <Container className="py-10 sm:py-14">
+    <div className="min-h-dvh bg-[#f6f3ef]">
+      <section className="relative isolate overflow-hidden bg-zinc-950 text-white">
+        <div className="absolute inset-0">
+          <Image
+            src="/module-admin-hero.png"
+            alt="Panel administrativo"
+            fill
+            className="object-cover"
+            sizes="100vw"
+            priority
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,10,10,0.86)_0%,rgba(10,10,10,0.72)_42%,rgba(10,10,10,0.64)_100%)]" />
+        </div>
+
+        <Container className="relative py-14 sm:py-16">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-3">
+              <div className="relative h-10 w-32 shrink-0">
+                <Image
+                  src={site.logoPath}
+                  alt={`${site.name} logo`}
+                  fill
+                  className="object-contain"
+                  sizes="128px"
+                  priority
+                />
+              </div>
+              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
+                Módulo interno
+              </div>
+            </div>
+            <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
+              {tab === "dashboard" ? "Dashboard de administración" : "Administración"}
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-zinc-200">
+              {tab === "dashboard"
+                ? "Accede a los módulos principales para gestionar catálogo, pagos y configuración."
+                : tab === "products"
+                ? "Administra repuestos, imágenes, precios, compatibilidad e inventario."
+                : "Configura los métodos de pago visibles y su información operativa."}
+            </p>
+          </div>
+        </Container>
+      </section>
+
+      <Container className="py-10 sm:py-14">
       <div className="fixed right-4 top-4 z-50">
         <button
           type="button"
-          className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50"
+          className="border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50"
           onClick={logout}
         >
           Cerrar sesión
@@ -1061,27 +1114,11 @@ export function AdminClient() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <div className="relative h-9 w-28 shrink-0">
-            <Image
-              src={site.logoPath}
-              alt={`${site.name} logo`}
-              fill
-              className="object-contain"
-              sizes="112px"
-              priority
-            />
-          </div>
-          <div className="leading-tight">
-            <div className="text-sm font-semibold text-zinc-950">{site.name}</div>
-            <div className="text-xs text-zinc-600">{site.tagline}</div>
-          </div>
-        </div>
         <div>
-          <h1 className="bg-gradient-to-r from-primary to-zinc-950 bg-clip-text text-2xl font-semibold text-transparent sm:text-3xl">
-            {tab === "dashboard" ? "Dashboard de Administración" : "Administración"}
-          </h1>
-          <p className="text-sm text-zinc-700">
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+            {site.name}
+          </div>
+          <p className="mt-2 text-sm text-zinc-700">
             {tab === "dashboard"
               ? "Elige un módulo para gestionar."
               : tab === "products"
@@ -1096,16 +1133,16 @@ export function AdminClient() {
           <button
             type="button"
             onClick={() => setTab("products")}
-            className="group rounded-2xl border border-zinc-200 bg-white p-6 text-left shadow-sm transition-colors hover:bg-zinc-50"
+            className="group border border-zinc-200 bg-white p-6 text-left shadow-sm transition-colors hover:border-primary/60 hover:bg-zinc-50"
           >
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700">
+              <div className="grid h-10 w-10 shrink-0 place-items-center border border-zinc-200 bg-zinc-50 text-zinc-700">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
                   <path d="M4 7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7Zm3-1a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H7Zm2 3h6v2H9V9Zm0 4h6v2H9v-2Z" />
                 </svg>
               </div>
               <div>
-                <div className="text-sm font-semibold text-rose-700">Repuestos</div>
+                <div className="text-sm font-semibold text-zinc-950">Repuestos</div>
                 <div className="text-xs text-zinc-600">Gestiona catálogo, precios e inventario</div>
               </div>
             </div>
@@ -1113,16 +1150,16 @@ export function AdminClient() {
           <button
             type="button"
             onClick={() => setTab("payments")}
-            className="group rounded-2xl border border-zinc-200 bg-white p-6 text-left shadow-sm transition-colors hover:bg-zinc-50"
+            className="group border border-zinc-200 bg-white p-6 text-left shadow-sm transition-colors hover:border-primary/60 hover:bg-zinc-50"
           >
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700">
+              <div className="grid h-10 w-10 shrink-0 place-items-center border border-zinc-200 bg-zinc-50 text-zinc-700">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
                   <path d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v2H3V7Zm0 4h18v6a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-6Zm3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
                 </svg>
               </div>
               <div>
-                <div className="text-sm font-semibold text-rose-700">Métodos de pago</div>
+                <div className="text-sm font-semibold text-zinc-950">Métodos de pago</div>
                 <div className="text-xs text-zinc-600">Configura los medios aceptados</div>
               </div>
             </div>
@@ -1165,68 +1202,101 @@ export function AdminClient() {
       )}
 
       {tab === "products" ? (
-        <div className="mt-4 rounded-2xl border border-zinc-200 bg-white">
-          <div className="flex items-center justify-between gap-4 border-b border-zinc-200 px-6 py-4">
-            <div className="text-sm font-semibold text-rose-700">Repuestos</div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                onClick={() => load(authHeader)}
-                disabled={state === "loading"}
-              >
-                Recargar
-              </button>
-              <button
-                type="button"
-                className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:brightness-90"
-                onClick={startNew}
-              >
-                Nuevo
-              </button>
+        <div className="mt-4 border border-zinc-200 bg-white">
+          <div className="flex flex-col gap-4 border-b border-zinc-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                Repuestos
+              </div>
+              <div className="mt-2 text-sm text-zinc-600">
+                {products.length} producto{products.length === 1 ? "" : "s"} cargado
+                {products.length === 1 ? "" : "s"} en el catálogo.
+              </div>
             </div>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center border border-primary bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
+              onClick={startNew}
+            >
+              Nuevo repuesto
+            </button>
           </div>
-          <div className="divide-y divide-zinc-200">
-            {products.map((p) => (
-              <button
-                key={p.slug}
-                type="button"
-                onClick={() => selectProduct(p)}
-                className="w-full px-6 py-4 text-left hover:bg-zinc-50"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
+
+          {products.length > 0 ? (
+            <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
+              {products.map((p) => (
+                <button
+                  key={p.slug}
+                  type="button"
+                  onClick={() => selectProduct(p)}
+                  className="group flex h-full flex-col overflow-hidden border border-zinc-200 bg-white text-left transition hover:border-primary/60 hover:shadow-[0_20px_50px_-30px_rgba(0,0,0,0.25)]"
+                >
+                  <div className="relative aspect-[16/10] overflow-hidden bg-zinc-50">
                     {p.imageUrl ? (
                       <img
                         src={p.imageUrl}
                         alt={p.name}
-                        className="h-12 w-12 rounded-lg border border-zinc-200 object-cover"
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                       />
                     ) : (
-                      <div className="h-12 w-12 rounded-lg border border-zinc-200 bg-zinc-50" />
+                      <div className="grid h-full w-full place-items-center text-sm font-semibold text-zinc-400">
+                        Sin imagen
+                      </div>
                     )}
-                    <div>
-                      <div className="text-sm font-semibold text-zinc-950">{p.name}</div>
-                      <div className="mt-1 text-xs text-zinc-600">
-                        {p.category || "Sin categoría"}
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02)_0%,rgba(0,0,0,0.12)_58%,rgba(0,0,0,0.3)_100%)]" />
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="flex min-h-[9.5rem] items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="min-h-[4.5rem] text-xl font-semibold tracking-tight text-zinc-950">
+                          {p.name}
+                        </div>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <span className="border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                            {p.category || "Sin categoría"}
+                          </span>
+                          <span
+                            className={[
+                              "px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
+                              p.stockStatus === "in_stock"
+                                ? "bg-emerald-50 text-emerald-800"
+                                : "bg-amber-50 text-amber-800",
+                            ].join(" ")}
+                          >
+                            {p.stockStatus === "in_stock" ? "En stock" : "Bajo pedido"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                          Precio
+                        </div>
+                        <div className="mt-1 text-lg font-semibold text-zinc-950">
+                          {formatMoney(p.priceCents, { currency: p.currency })}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-zinc-900">
-                      {formatMoney(p.priceCents, { currency: p.currency })}
+
+                    <div className="mt-5 flex items-center justify-between border-t border-zinc-200 pt-4 text-sm">
+                      <div className="text-zinc-600">
+                        Inventario:{" "}
+                        <span className="font-semibold text-zinc-950">
+                          {typeof p.inventoryQty === "number" ? p.inventoryQty : "—"}
+                        </span>
+                      </div>
+                      <span className="font-semibold text-primary transition group-hover:text-[#981b1f]">
+                        Editar →
+                      </span>
                     </div>
-                    <div className="mt-1 text-xs text-zinc-600">
-                      Inventario: {typeof p.inventoryQty === "number" ? p.inventoryQty : "—"}
-                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
-            {products.length === 0 ? (
-              <div className="px-6 py-6 text-sm text-zinc-600">No hay productos.</div>
-            ) : null}
-          </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="px-6 py-10 text-sm text-zinc-600">No hay productos.</div>
+          )}
         </div>
       ) : null}
       {tab === "payments" ? (
@@ -1930,11 +2000,33 @@ export function AdminClient() {
                   {error}
                 </div>
               ) : null}
+              {showDeleteConfirm ? (
+                <div className="mb-3 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+                  <div>¿Estás seguro de que deseas eliminar este repuesto?</div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                    >
+                      No
+                    </button>
+                    <button
+                      type="button"
+                      onClick={remove}
+                      className="rounded-lg border border-rose-200 bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+                      disabled={state === "loading"}
+                    >
+                      Sí, eliminar
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <div className="flex items-center justify-between">
                 {isEditingExisting ? (
                   <button
                     type="button"
-                    onClick={remove}
+                    onClick={() => setShowDeleteConfirm(true)}
                     className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
                     disabled={state === "loading"}
                   >
@@ -1972,6 +2064,7 @@ export function AdminClient() {
           </div>
         </div>
       ) : null}
-    </Container>
+      </Container>
+    </div>
   );
 }

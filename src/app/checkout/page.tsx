@@ -9,6 +9,21 @@ import type { PaymentMethod } from "@/lib/paymentMethodsStore";
 import type { Product } from "@/lib/productTypes";
 import { whatsAppWaMeUrl } from "@/lib/site";
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function onlyDigits(value: string) {
+  return value.replace(/\D+/g, "");
+}
+
+const latamCountries = [
+  { flag: "🇻🇪", code: "+58", label: "Venezuela", phoneLength: 10 },
+  { flag: "🇨🇴", code: "+57", label: "Colombia", phoneLength: 10 },
+  { flag: "🇪🇨", code: "+593", label: "Ecuador", phoneLength: 9 },
+  { flag: "🇵🇪", code: "+51", label: "Perú", phoneLength: 9 },
+  { flag: "🇨🇱", code: "+56", label: "Chile", phoneLength: 9 },
+  { flag: "🇦🇷", code: "+54", label: "Argentina", phoneLength: 10 },
+] as const;
+
 function buildCheckoutMessage(input: {
   items: { name: string; quantity: number }[];
   totalCents: number;
@@ -59,6 +74,7 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [countryCode, setCountryCode] = useState<(typeof latamCountries)[number]["code"]>("+58");
   const [paymentMethodId, setPaymentMethodId] = useState<string>("");
   const [paymentReference, setPaymentReference] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +145,10 @@ export default function CheckoutPage() {
     return paymentMethods.find((m) => m.id === effectivePaymentMethodId) ?? null;
   }, [effectivePaymentMethodId, paymentMethods]);
 
+  const selectedCountry = useMemo(() => {
+    return latamCountries.find((item) => item.code === countryCode) ?? latamCountries[0];
+  }, [countryCode]);
+
   return (
     <Container className="py-10 sm:py-14">
       <div className="flex items-center gap-3">
@@ -159,33 +179,75 @@ export default function CheckoutPage() {
         <div className="mt-8 grid gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
             <div className="rounded-2xl border border-zinc-200 bg-white p-6">
-              <div className="grid gap-4">
+              <form
+                className="grid gap-4"
+                autoComplete="off"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                }}
+              >
                 <input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
                   placeholder="Nombre Completo"
+                  autoComplete="off"
+                  name="full_name"
                 />
                 <input
                   value={idNumber}
-                  onChange={(e) => setIdNumber(e.target.value)}
+                  onChange={(e) => setIdNumber(onlyDigits(e.target.value))}
                   className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
                   placeholder="Cédula de Identidad"
+                  autoComplete="off"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={12}
+                  name="id_number"
                 />
                 <div className="grid gap-4 sm:grid-cols-12">
                   <div className="sm:col-span-3">
-                    <div className="flex h-[46px] items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-700 shadow-sm">
-                      🇻🇪 +58
+                    <label className="sr-only" htmlFor="country_code">
+                      País
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="country_code"
+                        value={countryCode}
+                        onChange={(e) => {
+                          setCountryCode(e.target.value as (typeof latamCountries)[number]["code"]);
+                          setPhone("");
+                        }}
+                        className="h-[46px] w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 pr-8 text-sm font-semibold text-zinc-700 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
+                        autoComplete="off"
+                        name="country_code"
+                      >
+                        {latamCountries.map((item) => (
+                          <option key={item.code} value={item.code}>
+                            {item.flag} {item.code}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-zinc-500">
+                        ▾
+                      </div>
                     </div>
                   </div>
                   <div className="sm:col-span-9">
                     <input
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => setPhone(onlyDigits(e.target.value))}
                       className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
                       placeholder="Teléfono"
-                      inputMode="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
+                      maxLength={selectedCountry.phoneLength}
+                      name="phone"
                     />
+                    <div className="mt-2 text-xs text-zinc-500">
+                      {selectedCountry.flag} {selectedCountry.label}: ingresa {selectedCountry.phoneLength} dígitos después de {selectedCountry.code}.
+                    </div>
                   </div>
                 </div>
                 <input
@@ -194,13 +256,22 @@ export default function CheckoutPage() {
                   className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
                   placeholder="Correo Electrónico (Opcional)"
                   inputMode="email"
+                  autoComplete="off"
+                  name="email"
                 />
-                <input
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
-                  placeholder="Dirección Completa"
-                />
+                <div>
+                  <input
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
+                    placeholder="Dirección Completa"
+                    autoComplete="off"
+                    name="address"
+                  />
+                  <div className="mt-2 text-xs text-zinc-500">
+                    Sugerencia: calle, número de casa o apartamento, sector y ciudad.
+                  </div>
+                </div>
                 <div className="relative">
                   <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-500">
                     $
@@ -253,6 +324,9 @@ export default function CheckoutPage() {
                   onChange={(e) => setPaymentReference(e.target.value)}
                   className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
                   placeholder="Número de Referencia"
+                  autoComplete="off"
+                  inputMode="text"
+                  name="payment_reference"
                 />
 
                 <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
@@ -274,7 +348,7 @@ export default function CheckoutPage() {
                     Cancelar
                   </Link>
                   <button
-                    type="button"
+                    type="submit"
                     className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:brightness-110"
                     onClick={() => {
                       setError(null);
@@ -286,18 +360,47 @@ export default function CheckoutPage() {
                       const nextFullName = fullName.trim();
                       const nextId = idNumber.trim();
                       const nextPhone = phone.trim();
+                      const nextEmail = email.trim();
                       const nextAddress = address.trim();
-                      if (!nextFullName || !nextId || !nextPhone || !nextAddress) {
-                        setError("Completa nombre, cédula, teléfono y dirección.");
+                      const missingFields: string[] = [];
+                      if (!nextFullName) missingFields.push("nombre");
+                      if (!nextId) missingFields.push("cédula");
+                      if (!nextPhone) missingFields.push("teléfono");
+                      if (!nextAddress) missingFields.push("dirección");
+                      if (missingFields.length > 0) {
+                        setError(`Completa los siguientes campos: ${missingFields.join(", ")}.`);
+                        return;
+                      }
+                      const normalizedFullName = nextFullName.replace(/\s+/g, " ").trim();
+                      if (!normalizedFullName.includes(" ")) {
+                        setError("Ingresa al menos nombre y apellido.");
+                        return;
+                      }
+                      if (!/^\d+$/.test(nextId)) {
+                        setError("La cédula solo puede contener números.");
+                        return;
+                      }
+                      if (!/^\d+$/.test(nextPhone)) {
+                        setError("El teléfono solo puede contener números.");
+                        return;
+                      }
+                      if (nextPhone.length !== selectedCountry.phoneLength) {
+                        setError(
+                          `El teléfono para ${selectedCountry.label} debe tener ${selectedCountry.phoneLength} dígitos después de ${selectedCountry.code}.`,
+                        );
+                        return;
+                      }
+                      if (nextEmail && !emailPattern.test(nextEmail)) {
+                        setError("Ingresa un correo electrónico válido o deja ese campo vacío.");
                         return;
                       }
                       const message = buildCheckoutMessage({
                         items: enriched.map((x) => ({ name: x.product.name, quantity: x.quantity })),
                         totalCents,
-                        fullName: nextFullName,
+                        fullName: normalizedFullName,
                         idNumber: nextId,
-                        phone: nextPhone,
-                        email: email.trim() ? email.trim() : undefined,
+                        phone: `${selectedCountry.code} ${nextPhone}`,
+                        email: nextEmail || undefined,
                         address: nextAddress,
                         paymentMethodName: method.name,
                         paymentReference: paymentReference.trim() ? paymentReference.trim() : undefined,
@@ -309,7 +412,7 @@ export default function CheckoutPage() {
                     Reservar y Enviar
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
 

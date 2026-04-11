@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/cart/CartProvider";
@@ -25,6 +25,14 @@ export const metadata: Metadata = {
     "Taller mecánico y repuestos en un solo lugar. Cotiza al instante por WhatsApp. Agenda mantenimientos, diagnósticos y reparaciones sin perder tiempo. Consulta disponibilidad y precios en minutos, directo desde tu celular.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0a0a0a",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,10 +43,10 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full overflow-x-hidden flex flex-col">
         <CartProvider>
           <Header />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pb-24 md:pb-0">{children}</main>
           <FloatingWhatsApp />
           <Footer />
         </CartProvider>

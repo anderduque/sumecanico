@@ -28,3 +28,12 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 7rem;
+}
+
+* {
+  min-width: 0;
+}

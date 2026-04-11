@@ -1,198 +1,313 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/Container";
+import { MailIcon } from "@/components/icons/MailIcon";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
-import { site } from "@/lib/site";
-import { AutoFitText } from "@/components/AutoFitText";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
+import { site, whatsAppWaMeUrl } from "@/lib/site";
+
+const serviceItems = [
+  { label: "Motores", icon: EngineIcon },
+  { label: "Diagnóstico", icon: ScanIcon },
+  { label: "Mantenimiento", icon: WrenchIcon },
+  { label: "Frenos", icon: BrakeIcon },
+  { label: "Electricidad", icon: BoltIcon },
+  { label: "Repuestos", icon: PartsIcon },
+] as const;
+
+const aboutStats = [
+  { value: "+20", label: "Años de experiencia" },
+  { value: "1,000+", label: "Servicios realizados" },
+  { value: "100%", label: "Atención directa" },
+] as const;
+
+function EngineIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <path d="M4 10h3l2-3h4l2 2h3l2 3v5h-2a2 2 0 0 1-4 0H10a2 2 0 0 1-4 0H4z" />
+      <path d="M7 10V7M15 9V6M19 12h1" />
+    </svg>
+  );
+}
+
+function ScanIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <path d="M8 4H6a2 2 0 0 0-2 2v2M16 4h2a2 2 0 0 1 2 2v2M8 20H6a2 2 0 0 1-2-2v-2M16 20h2a2 2 0 0 0 2-2v-2" />
+      <path d="M7 12h10M9 9h6M10 15h4" />
+    </svg>
+  );
+}
+
+function WrenchIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <path d="M14 6a4 4 0 0 0 4.7 4.7l-8 8a2 2 0 1 1-2.8-2.8l8-8A4 4 0 0 0 14 6z" />
+      <path d="M13 7l4 4" />
+    </svg>
+  );
+}
+
+function BrakeIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <circle cx="12" cy="12" r="7" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M12 5v2M19 12h-2M12 19v-2M5 12h2" />
+    </svg>
+  );
+}
+
+function BoltIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <path d="M13 2L6 13h5l-1 9 8-12h-5l0-8z" />
+    </svg>
+  );
+}
+
+function PartsIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <path d="M9 4l1.5 2.5L13 6l1 2.7L17 10l-2 2 1 3-3-.7L11 17l-1.5-2.4L7 15l1-3-2-2 3-1.3L9 4z" />
+      <circle cx="12" cy="12" r="1.5" />
+    </svg>
+  );
+}
+
+function MapPinIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <path d="M12 21s6-4.8 6-11a6 6 0 1 0-12 0c0 6.2 6 11 6 11z" />
+      <circle cx="12" cy="10" r="2.2" />
+    </svg>
+  );
+}
+
+function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <path d="M21 16.2v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 1 3.3 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.7l.4 2.8a2 2 0 0 1-.6 1.8L6 9a16 16 0 0 0 9 9l1.7-1.8a2 2 0 0 1 1.8-.6l2.8.4A2 2 0 0 1 21 16.2z" />
+    </svg>
+  );
+}
 
 export default function Home() {
   return (
     <div className="bg-white">
-      <section className="border-b border-zinc-200 bg-gradient-to-b from-zinc-50 to-white">
-        <Container className="py-12 sm:py-16">
-          <div className="grid gap-10 lg:grid-cols-12">
-            <div className="lg:col-span-12">
-              <div className="flex items-center gap-3">
-                <div className="relative h-10 w-40">
-                  <Image
-                    src={site.logoPath}
-                    alt={`${site.name} logo`}
-                    fill
-                    className="object-contain"
-                    sizes="160px"
-                    priority
-                  />
+      <section className="border-b border-zinc-800 bg-black text-white">
+        <Container className="py-3">
+          <div className="flex flex-col gap-3 text-xs text-zinc-300 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:text-sm">
+            <div className="flex items-center gap-2">
+              <MapPinIcon className="h-4 w-4 shrink-0 text-primary" />
+              <span>{site.addressLine}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <PhoneIcon className="h-4 w-4 shrink-0 text-primary" />
+              <span>{site.whatsappPhoneE164}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MailIcon className="h-4 w-4 shrink-0 text-primary" />
+              <span>{site.email}</span>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      <section className="relative isolate overflow-hidden bg-zinc-950">
+        <div className="absolute inset-0">
+          <Image
+            src="/home-hero-mechanic.png"
+            alt="Mecánico trabajando en un vehículo"
+            fill
+            className="object-cover"
+            sizes="100vw"
+            priority
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.82)_0%,rgba(0,0,0,0.58)_42%,rgba(0,0,0,0.44)_100%)]" />
+        </div>
+
+        <Container className="relative py-20 sm:py-24 lg:py-32">
+          <div className="max-w-3xl">
+            <div className="text-xs font-semibold uppercase tracking-[0.36em] text-yellow-300">
+              Servicio automotriz de calidad
+            </div>
+            <h1 className="mt-5 text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl lg:text-7xl">
+              Taller mecánico
+            </h1>
+            <p className="mt-6 max-w-2xl text-base leading-7 text-zinc-200 sm:text-lg">
+              Mantenimientos, reparaciones y repuestos con una ejecución ordenada y una atención
+              más clara. Especialistas en motores para clientes que buscan confianza y resultados.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <WhatsAppLink
+                message="Hola, quiero agendar una cita para revisar mi vehículo."
+                className="rounded-none bg-white px-7 py-3 text-sm font-semibold text-zinc-950 hover:bg-zinc-200"
+              >
+                Agenda tu cita
+              </WhatsAppLink>
+              <Link
+                href="/servicios"
+                className="inline-flex items-center justify-center border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
+              >
+                Ver servicios
+              </Link>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      <section className="border-b border-zinc-800 bg-black text-white">
+        <Container className="py-5">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
+            {serviceItems.map((item) => (
+              <div key={item.label} className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/80">
+                  <item.icon className="h-5 w-5" />
                 </div>
-                <div className="hidden text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500 sm:block">
-                  Valencia · Carabobo
-                </div>
+                <div className="text-sm font-medium text-zinc-200">{item.label}</div>
               </div>
+            ))}
+          </div>
+        </Container>
+      </section>
 
-              <h1 className="mt-6 bg-gradient-to-r from-primary to-zinc-950 bg-clip-text text-3xl font-semibold tracking-tight text-transparent sm:text-5xl">
-                Especialistas en motores y repuestos, desde hace más de 20 años
-              </h1>
-              <p className="mt-4 max-w-3xl text-base leading-7 text-zinc-700 sm:text-lg">
-                {site.name} nació en Valencia, Carabobo con una meta clara: resolver problemas de
-                motor con diagnóstico preciso y reparaciones confiables. Con el tiempo ampliamos a
-                mantenimiento, frenos, electricidad y repuestos para que resuelvas todo en un solo
-                lugar.
-              </p>
-
-              <div className="mt-7">
-                <WhatsAppLink message="Hola, quiero cotizar un servicio/repuesto para mi vehículo." />
+      <section className="bg-white">
+        <Container className="py-16 sm:py-20">
+          <div className="grid gap-10 lg:grid-cols-12 lg:items-start">
+            <div className="lg:col-span-5">
+              <div className="text-xs font-semibold uppercase tracking-[0.32em] text-primary">
+                Tu confianza, nuestra inspiración
               </div>
+              <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-zinc-950 sm:text-5xl">
+                Sobre nosotros
+              </h2>
+            </div>
 
-              <div className="mt-6 flex flex-wrap gap-2 text-xs text-zinc-600">
-                <span className="rounded-full bg-zinc-100 px-3 py-1">Motores</span>
-                <span className="rounded-full bg-zinc-100 px-3 py-1">Diagnóstico</span>
-                <span className="rounded-full bg-zinc-100 px-3 py-1">Mantenimiento</span>
-                <span className="rounded-full bg-zinc-100 px-3 py-1">Encendido</span>
-                <span className="rounded-full bg-zinc-100 px-3 py-1">Frenos</span>
-                <span className="rounded-full bg-zinc-100 px-3 py-1">Repuestos</span>
-              </div>
-
-              <div className="mt-10 grid gap-6 md:grid-cols-2 md:items-center">
-                <div className="relative overflow-hidden rounded-3xl bg-zinc-100">
-                  <div className="relative h-72 w-full sm:h-80">
+            <div className="lg:col-span-7">
+              <div className="mb-8 grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
+                <div className="relative overflow-hidden rounded-[1.75rem] bg-zinc-100">
+                  <div className="relative aspect-[4/3] w-full">
                     <Image
-                      src="/su mecanico.jpeg"
-                      alt="Mecánico trabajando con un auto"
+                      src="/home-engine-service.png"
+                      alt="Trabajo mecánico sobre el motor de un vehículo"
                       fill
                       className="object-cover"
-                      sizes="(min-width: 768px) 520px, 100vw"
-                      priority
+                      sizes="(min-width: 1024px) 520px, 100vw"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
                   </div>
                 </div>
-
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">
-                    Tu confianza, nuestra inspiración
-                  </div>
-                  <h2 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl">
-                    Acerca de {site.name}
-                  </h2>
-                  <p className="mt-3 text-sm leading-6 text-zinc-700">
-                    Somos un taller mecánico con más de 20 años de experiencia. Nos enfocamos en
-                    explicar el diagnóstico de forma clara y en recomendar la solución correcta
-                    según tu vehículo y presupuesto.
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-zinc-700">
-                    Desde el primer día, el objetivo ha sido el mismo: trabajo bien hecho, atención
-                    directa y que salgas seguro.
-                  </p>
-
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <Link
-                      href="/contacto"
-                      className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
-                    >
-                      Más información →
-                    </Link>
-                    <div className="grid w-full grid-cols-3 gap-3 sm:w-auto">
-                      <div className="min-w-0 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-                        <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                          Experiencia
-                        </div>
-                        <AutoFitText
-                          className="mt-1 font-semibold text-zinc-950"
-                          maxFontSize={18}
-                          minFontSize={12}
-                        >
-                          +20 años
-                        </AutoFitText>
-                      </div>
-                      <div className="min-w-0 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-                        <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                          Motores
-                        </div>
-                        <AutoFitText
-                          className="mt-1 font-semibold text-zinc-950"
-                          maxFontSize={18}
-                          minFontSize={12}
-                        >
-                          Especialistas
-                        </AutoFitText>
-                      </div>
-                      <div className="min-w-0 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-                        <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                          Repuestos
-                        </div>
-                        <AutoFitText
-                          className="mt-1 font-semibold text-zinc-950"
-                          maxFontSize={18}
-                          minFontSize={12}
-                        >
-                          Catálogo
-                        </AutoFitText>
-                      </div>
-                    </div>
+                <div className="relative overflow-hidden rounded-[1.75rem] bg-zinc-100">
+                  <div className="relative aspect-[4/3] w-full">
+                    <Image
+                      src="/home-engine-detail.png"
+                      alt="Detalle de reparación y ajuste en motor"
+                      fill
+                      className="object-cover"
+                      sizes="(min-width: 1024px) 360px, 100vw"
+                    />
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </Container>
-      </section>
 
-      <section className="border-b border-zinc-200 bg-primary">
-        <Container className="py-6 sm:py-8">
-          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              <div className="text-sm font-semibold text-white/90">
-                ¿Listo para resolverlo hoy?
-              </div>
-              <div className="mt-1 text-sm text-white/80">
-                Agenda servicio o compra repuestos en pocos pasos.
-              </div>
-            </div>
-            <div className="w-full sm:w-auto">
-              <WhatsAppLink message="Hola, quiero cotizar un servicio/repuesto para mi vehículo." />
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      <section className="border-t border-zinc-200 bg-zinc-950">
-        <Container className="py-12 sm:py-14">
-          <div className="grid gap-8 lg:grid-cols-12 lg:items-center">
-            <div className="lg:col-span-7">
-              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-white/60">
-                Confianza y seguridad
-              </div>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                Cuidando tu motor y tu seguridad en cada kilómetro
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">
-                Trabajamos con diagnóstico claro, repuestos adecuados y un proceso ordenado para
-                evitar retrabajos. Te orientamos sobre compatibilidad y disponibilidad antes de
-                finalizar.
+              <p className="text-base leading-8 text-zinc-700 sm:text-lg">
+                En {site.name}, reunimos la experiencia de un taller especializado con la
+                practicidad de resolver diagnóstico, reparación y repuestos en un solo lugar.
+                Nuestro trabajo parte de una idea simple: explicar bien, reparar con criterio y
+                entregar el vehículo en condiciones.
+              </p>
+              <p className="mt-5 text-base leading-8 text-zinc-700 sm:text-lg">
+                Llevamos más de 20 años atendiendo en Valencia, con foco en motores, mantenimiento
+                y soluciones mecánicas que realmente responden a lo que el vehículo necesita. Sin
+                vueltas, sin sobrecargar el proceso, con atención directa.
               </p>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white">
-                  Diagnóstico preciso
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white">
-                  Repuestos correctos
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white">
-                  Atención directa
-                </div>
+              <div className="mt-8 grid gap-4 border-t border-zinc-200 pt-8 sm:grid-cols-3">
+                {aboutStats.map((item) => (
+                  <div key={item.label}>
+                    <div className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
+                      {item.value}
+                    </div>
+                    <div className="mt-2 text-sm text-zinc-600">{item.label}</div>
+                  </div>
+                ))}
               </div>
+
+              <div className="mt-8">
+                <Link
+                  href="/contacto"
+                  className="inline-flex items-center justify-center border border-primary bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
+                >
+                  Más información
+                </Link>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      <section className="border-y border-zinc-200 bg-primary">
+        <Container className="py-8 sm:py-10">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.28em] text-white/75">
+                Servicio confiable
+              </div>
+              <div className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                Agenda diagnóstico, mantenimiento o reparación.
+              </div>
+            </div>
+            <a
+              href={whatsAppWaMeUrl("Hola, quiero cotizar un servicio/repuesto para mi vehículo.")}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-3 border border-white bg-white px-6 py-3 text-sm font-semibold text-primary transition hover:bg-zinc-100"
+            >
+              <WhatsAppIcon className="h-5 w-5 text-primary" />
+              <span>Cotizar ahora</span>
+            </a>
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-[#111111]">
+        <Container className="py-16 sm:py-20">
+          <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
+            <div className="lg:col-span-7">
+              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
+                Cuidado y seguridad
+              </div>
+              <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
+                Trabajo técnico bien hecho, desde el diagnóstico hasta la entrega.
+              </h2>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-300">
+                Revisamos compatibilidad, alcance del trabajo y repuestos antes de cerrar el
+                servicio. Ese orden reduce retrabajos y te da una decisión más clara desde el
+                inicio.
+              </p>
             </div>
 
             <div className="lg:col-span-5">
-              <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-                <div className="relative h-56 w-full sm:h-72">
+              <div className="overflow-hidden border border-white/10 bg-white/5">
+                <div className="relative aspect-[4/3] w-full">
                   <Image
-                    src={site.logoPath}
-                    alt={`${site.name}`}
+                    src="/home-engine-service.png"
+                    alt="Servicio mecánico profesional en taller"
                     fill
-                    className="object-contain p-10"
+                    className="object-cover"
                     sizes="(min-width: 1024px) 420px, 100vw"
                   />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.18)_48%,rgba(0,0,0,0.75)_100%)]" />
+                </div>
+                <div className="space-y-4 p-8">
+                  <div className="border-b border-white/10 pb-4 text-sm font-medium text-white/90">
+                    Diagnóstico preciso
+                  </div>
+                  <div className="border-b border-white/10 pb-4 text-sm font-medium text-white/90">
+                    Repuestos adecuados
+                  </div>
+                  <div className="text-sm font-medium text-white/90">Atención directa</div>
                 </div>
               </div>
             </div>
