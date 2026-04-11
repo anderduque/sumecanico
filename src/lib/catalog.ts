@@ -55,6 +55,17 @@ export const services: Service[] = [
       "Instalación y reparación de componentes",
     ],
   },
+  {
+    slug: "limpieza-inyectores",
+    name: "Limpieza de inyectores",
+    summary: "Mejora la combustión y el rendimiento con una limpieza profesional.",
+    imageUrl: "/limpieza de inyectores.jpeg",
+    details: [
+      "Diagnóstico de inyección y síntomas",
+      "Limpieza para recuperar pulverización y respuesta",
+      "Revisión de consumo, ralentí y encendido",
+    ],
+  },
 ];
 
 export function getServiceBySlug(slug: string) {

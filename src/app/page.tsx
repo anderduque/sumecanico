@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Container } from "@/components/Container";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { site } from "@/lib/site";
@@ -9,8 +10,8 @@ export default function Home() {
     <div className="bg-white">
       <section className="border-b border-zinc-200 bg-gradient-to-b from-zinc-50 to-white">
         <Container className="py-12 sm:py-16">
-          <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
-            <div className="lg:col-span-7">
+          <div className="grid gap-10 lg:grid-cols-12">
+            <div className="lg:col-span-12">
               <div className="flex items-center gap-3">
                 <div className="relative h-10 w-40">
                   <Image
@@ -30,11 +31,11 @@ export default function Home() {
               <h1 className="mt-6 bg-gradient-to-r from-primary to-zinc-950 bg-clip-text text-3xl font-semibold tracking-tight text-transparent sm:text-5xl">
                 Especialistas en motores y repuestos, desde hace más de 20 años
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-700 sm:text-lg">
-                {site.name} nació hace más de 20 años con una meta clara: resolver problemas de
-                motor con diagnóstico preciso y reparaciones confiables. Hoy también te apoyamos con
-                mantenimiento, encendido, frenos y venta de repuestos para que salgas rápido y
-                seguro.
+              <p className="mt-4 max-w-3xl text-base leading-7 text-zinc-700 sm:text-lg">
+                {site.name} nació en Valencia, Carabobo con una meta clara: resolver problemas de
+                motor con diagnóstico preciso y reparaciones confiables. Con el tiempo ampliamos a
+                mantenimiento, frenos, electricidad y repuestos para que resuelvas todo en un solo
+                lugar.
               </p>
 
               <div className="mt-7">
@@ -49,48 +50,83 @@ export default function Home() {
                 <span className="rounded-full bg-zinc-100 px-3 py-1">Frenos</span>
                 <span className="rounded-full bg-zinc-100 px-3 py-1">Repuestos</span>
               </div>
-            </div>
 
-            <div className="lg:col-span-5">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10">
-                    <Image src="/window.svg" alt="" width={18} height={18} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-zinc-950">Atención clara y directa</div>
-                    <div className="mt-1 text-sm text-zinc-700">
-                      Comparte marca, modelo, año y el síntoma. Si es repuesto, agrega foto o número.
-                    </div>
+              <div className="mt-10 grid gap-6 md:grid-cols-2 md:items-center">
+                <div className="relative overflow-hidden rounded-3xl bg-zinc-100">
+                  <div className="relative h-72 w-full sm:h-80">
+                    <Image
+                      src="/su mecanico.jpeg"
+                      alt="Mecánico trabajando con un auto"
+                      fill
+                      className="object-cover"
+                      sizes="(min-width: 768px) 520px, 100vw"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3">
-                  <WhatsAppLink message="Hola, quiero cotizar un servicio/repuesto para mi vehículo." />
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div className="min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                      <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                        Experiencia
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">
+                    Tu confianza, nuestra inspiración
+                  </div>
+                  <h2 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl">
+                    Acerca de {site.name}
+                  </h2>
+                  <p className="mt-3 text-sm leading-6 text-zinc-700">
+                    Somos un taller mecánico con más de 20 años de experiencia. Nos enfocamos en
+                    explicar el diagnóstico de forma clara y en recomendar la solución correcta
+                    según tu vehículo y presupuesto.
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-zinc-700">
+                    Desde el primer día, el objetivo ha sido el mismo: trabajo bien hecho, atención
+                    directa y que salgas seguro.
+                  </p>
+
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <Link
+                      href="/contacto"
+                      className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                    >
+                      Más información →
+                    </Link>
+                    <div className="grid w-full grid-cols-3 gap-3 sm:w-auto">
+                      <div className="min-w-0 rounded-xl border border-zinc-200 bg-white px-4 py-3">
+                        <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                          Experiencia
+                        </div>
+                        <AutoFitText
+                          className="mt-1 font-semibold text-zinc-950"
+                          maxFontSize={18}
+                          minFontSize={12}
+                        >
+                          +20 años
+                        </AutoFitText>
                       </div>
-                      <AutoFitText className="mt-1 font-semibold text-zinc-950" maxFontSize={18} minFontSize={12}>
-                        +20 años
-                      </AutoFitText>
-                    </div>
-                    <div className="min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                      <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                        Motores
+                      <div className="min-w-0 rounded-xl border border-zinc-200 bg-white px-4 py-3">
+                        <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                          Motores
+                        </div>
+                        <AutoFitText
+                          className="mt-1 font-semibold text-zinc-950"
+                          maxFontSize={18}
+                          minFontSize={12}
+                        >
+                          Especialistas
+                        </AutoFitText>
                       </div>
-                      <AutoFitText className="mt-1 font-semibold text-zinc-950" maxFontSize={18} minFontSize={12}>
-                        Especialistas
-                      </AutoFitText>
-                    </div>
-                    <div className="min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                      <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                        Repuestos
+                      <div className="min-w-0 rounded-xl border border-zinc-200 bg-white px-4 py-3">
+                        <div className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                          Repuestos
+                        </div>
+                        <AutoFitText
+                          className="mt-1 font-semibold text-zinc-950"
+                          maxFontSize={18}
+                          minFontSize={12}
+                        >
+                          Catálogo
+                        </AutoFitText>
                       </div>
-                      <AutoFitText className="mt-1 font-semibold text-zinc-950" maxFontSize={18} minFontSize={12}>
-                        Catálogo
-                      </AutoFitText>
                     </div>
                   </div>
                 </div>
