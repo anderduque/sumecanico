@@ -2013,6 +2013,8 @@ export function AdminClient() {
                               const exists = current.some((x) => x.trim().toLowerCase() === token.trim().toLowerCase());
                               if (exists) return;
                               setCompatibleWithText([...current, token].join(", "));
+                              setCompatBrand("");
+                              setCompatBodyStyle("");
                               setCompatModel("");
                             }}
                           >
