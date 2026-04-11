@@ -186,26 +186,15 @@ export default function Home() {
             </div>
 
             <div className="lg:col-span-7">
-              <div className="mb-8 grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
+              <div className="mb-8">
                 <div className="relative overflow-hidden rounded-[1.75rem] bg-zinc-100">
-                  <div className="relative aspect-[4/3] w-full">
+                  <div className="relative aspect-[16/10] w-full">
                     <Image
                       src="/home-engine-service.png"
                       alt="Trabajo mecánico sobre el motor de un vehículo"
                       fill
                       className="object-cover"
-                      sizes="(min-width: 1024px) 520px, 100vw"
-                    />
-                  </div>
-                </div>
-                <div className="relative overflow-hidden rounded-[1.75rem] bg-zinc-100">
-                  <div className="relative aspect-[4/3] w-full">
-                    <Image
-                      src="/home-engine-detail.png"
-                      alt="Detalle de reparación y ajuste en motor"
-                      fill
-                      className="object-cover"
-                      sizes="(min-width: 1024px) 360px, 100vw"
+                      sizes="(min-width: 1024px) 720px, 100vw"
                     />
                   </div>
                 </div>
@@ -292,7 +281,7 @@ export default function Home() {
               <div className="overflow-hidden border border-white/10 bg-white/5">
                 <div className="relative aspect-[4/3] w-full">
                   <Image
-                    src="/home-engine-service.png"
+                    src="/home-engine-detail.png"
                     alt="Servicio mecánico profesional en taller"
                     fill
                     className="object-cover"
