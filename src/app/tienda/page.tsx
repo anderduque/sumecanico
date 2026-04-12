@@ -10,7 +10,6 @@ export const metadata: Metadata = {
   title: "Tienda",
 };
 
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export default async function TiendaPage({

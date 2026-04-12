@@ -7,7 +7,6 @@ import { ProductDetailActions } from "@/components/ProductDetailActions";
 import { formatMoney } from "@/lib/money";
 import { getProductBySlug } from "@/lib/productsStore";
 
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function generateMetadata({

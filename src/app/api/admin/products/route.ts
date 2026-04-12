@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { isAdminRequestAuthorized } from "@/lib/adminAuth";
 import type { Product } from "@/lib/productTypes";
 import { deleteProduct, getProducts, upsertProduct } from "@/lib/productsStore";
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "slug_exists" }, { status: 409 });
   }
   await upsertProduct(body);
+  revalidateTag("products", "max");
   return NextResponse.json({ ok: true });
 }
 
@@ -67,6 +69,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "invalid_product" }, { status: 400 });
   }
   await upsertProduct(body);
+  revalidateTag("products", "max");
   return NextResponse.json({ ok: true });
 }
 
@@ -76,5 +79,6 @@ export async function DELETE(request: Request) {
   const slug = typeof (body as { slug?: unknown })?.slug === "string" ? (body as { slug: string }).slug : "";
   if (!slug.trim()) return NextResponse.json({ error: "missing_slug" }, { status: 400 });
   await deleteProduct(slug);
+  revalidateTag("products", "max");
   return NextResponse.json({ ok: true });
 }

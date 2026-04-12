@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { unstable_cache } from "next/cache";
 import type { Product } from "@/lib/productTypes";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
@@ -73,7 +74,7 @@ function removeUndefined<T extends Record<string, unknown>>(value: T) {
   return out as T;
 }
 
-export async function getProducts(): Promise<Product[]> {
+async function getProductsUncached(): Promise<Product[]> {
   const db = getFirestoreDb();
   if (db) {
     const snap = await db.collection("products").get();
@@ -91,7 +92,12 @@ export async function getProducts(): Promise<Product[]> {
   return list;
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | undefined> {
+export const getProducts = unstable_cache(getProductsUncached, ["products"], {
+  revalidate: 60,
+  tags: ["products"],
+});
+
+async function getProductBySlugUncached(slug: string): Promise<Product | undefined> {
   const db = getFirestoreDb();
   if (db) {
     const byId = await db.collection("products").doc(slug).get();
@@ -112,6 +118,11 @@ export async function getProductBySlug(slug: string): Promise<Product | undefine
   const list = await getProducts();
   return list.find((p) => p.slug === slug);
 }
+
+export const getProductBySlug = unstable_cache(getProductBySlugUncached, ["productBySlug"], {
+  revalidate: 60,
+  tags: ["products"],
+});
 
 export async function saveProducts(nextProducts: Product[]) {
   const normalized = nextProducts
