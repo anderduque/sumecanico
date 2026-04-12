@@ -14,7 +14,7 @@ export default function CarritoPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/products", { cache: "no-store" })
+    fetch("/api/products")
       .then((res) => res.json())
       .then((data: unknown) => {
         if (cancelled) return;
@@ -62,7 +62,7 @@ export default function CarritoPage() {
       <section className="relative isolate overflow-hidden bg-zinc-950 text-white">
         <div className="absolute inset-0">
           <Image
-            src="/home-engine-service.png"
+            src="/home-engine-service-optimized.jpg"
             alt="Carrito de compras de repuestos"
             fill
             className="object-cover"

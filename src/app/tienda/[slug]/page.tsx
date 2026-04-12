@@ -65,7 +65,15 @@ export default async function ProductoPage({
         <div className="absolute inset-0">
           {product.imageUrl ? (
             product.imageUrl.startsWith("data:") ? (
-              <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+              <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                unoptimized
+                className="object-cover"
+                sizes="100vw"
+                priority
+              />
             ) : (
               <Image src={product.imageUrl} alt={product.name} fill className="object-cover" sizes="100vw" priority />
             )

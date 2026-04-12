@@ -78,7 +78,7 @@ export default async function TiendaPage({
 
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
-          <Image src="/home-hero-mechanic.png" alt="" fill className="object-cover" sizes="100vw" />
+          <Image src="/home-hero-mechanic-optimized.jpg" alt="" fill className="object-cover" sizes="100vw" />
         </div>
 
         <Container className="relative py-12 sm:py-16">
@@ -91,12 +91,13 @@ export default async function TiendaPage({
                 <div className="relative aspect-[16/10] overflow-hidden bg-zinc-900">
                   {product.imageUrl ? (
                     product.imageUrl.startsWith("data:") ? (
-                      // Keep local fallback for inline admin-provided images.
-                      <img
+                      <Image
                         src={product.imageUrl}
                         alt={product.name}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                        loading="lazy"
+                        fill
+                        unoptimized
+                        className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                        sizes="(min-width: 1280px) 360px, (min-width: 768px) 45vw, 100vw"
                       />
                     ) : (
                       <Image

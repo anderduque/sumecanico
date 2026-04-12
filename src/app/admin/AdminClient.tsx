@@ -567,19 +567,18 @@ export function AdminClient() {
     setSelectedOrderId(null);
   }, []);
 
-  function clearStoredAuth() {
+  const clearStoredAuth = useCallback(() => {
     try {
       sessionStorage.removeItem(sessionAuthKey);
       sessionStorage.removeItem(sessionLastActiveKey);
     } catch {}
-  }
+  }, []);
 
-  function bumpActivity() {
+  const bumpActivity = useCallback(() => {
     try {
-      // eslint-disable-next-line react-hooks/purity
       sessionStorage.setItem(sessionLastActiveKey, String(Date.now()));
     } catch {}
-  }
+  }, []);
 
   function openNewPaymentMethodModal() {
     const nextSort = paymentMethods.length > 0 ? Math.max(...paymentMethods.map((m) => m.sort)) + 10 : 10;
@@ -724,7 +723,7 @@ export function AdminClient() {
     }
   }
 
-  async function load(nextAuthHeader: string): Promise<boolean> {
+  const load = useCallback(async (nextAuthHeader: string): Promise<boolean> => {
     setState("loading");
     setError(null);
     try {
@@ -755,9 +754,9 @@ export function AdminClient() {
       setError("No se pudo cargar el catálogo.");
       return false;
     }
-  }
+  }, [bumpActivity, clearStoredAuth]);
 
-  async function loadPaymentMethods(nextAuthHeader: string): Promise<boolean> {
+  const loadPaymentMethods = useCallback(async (nextAuthHeader: string): Promise<boolean> => {
     setPaymentsState("loading");
     setPaymentsError(null);
     setPaymentsSaved(false);
@@ -793,9 +792,9 @@ export function AdminClient() {
       setPaymentsError("No se pudieron cargar los métodos de pago.");
       return false;
     }
-  }
+  }, [bumpActivity, clearStoredAuth]);
 
-  async function loadOrders(nextAuthHeader: string): Promise<boolean> {
+  const loadOrders = useCallback(async (nextAuthHeader: string): Promise<boolean> => {
     setOrdersState("loading");
     setOrdersError(null);
     try {
@@ -818,7 +817,7 @@ export function AdminClient() {
       const data = (await res.json()) as unknown;
       const list = Array.isArray(data) ? (data as OrderRecord[]) : [];
       setOrders(list);
-      if (!selectedOrderId && list[0]?.id) setSelectedOrderId(list[0].id);
+      setSelectedOrderId((prev) => prev || list[0]?.id || null);
       setOrdersState("ready");
       bumpActivity();
       return true;
@@ -827,7 +826,7 @@ export function AdminClient() {
       setOrdersError("No se pudieron cargar las órdenes.");
       return false;
     }
-  }
+  }, [bumpActivity, clearStoredAuth]);
 
   useEffect(() => {
     if (!authHeader) return;
@@ -837,7 +836,7 @@ export function AdminClient() {
       void loadOrders(authHeader);
     }, 0);
     return () => window.clearTimeout(t);
-  }, [authHeader]);
+  }, [authHeader, load, loadOrders, loadPaymentMethods]);
 
   useEffect(() => {
     if (!authHeader) return;
@@ -860,7 +859,7 @@ export function AdminClient() {
     return () => {
       active = false;
     };
-  }, [authHeader]);
+  }, [authHeader, bumpActivity]);
 
   useEffect(() => {
     if (!authHeader) return;
@@ -877,7 +876,7 @@ export function AdminClient() {
     return () => {
       for (const evt of events) window.removeEventListener(evt, onActivity);
     };
-  }, [authHeader]);
+  }, [authHeader, bumpActivity]);
 
   useEffect(() => {
     if (!authHeader) return;
@@ -893,7 +892,7 @@ export function AdminClient() {
       if (Date.now() - last >= idleTimeoutMs) logout();
     }, 5000);
     return () => window.clearInterval(intervalId);
-  }, [authHeader, logout]);
+  }, [authHeader, bumpActivity, idleTimeoutMs, logout]);
 
   function selectProduct(p: Product) {
     const normalizedInventory =
@@ -1525,10 +1524,13 @@ export function AdminClient() {
                 >
                   <div className="relative aspect-[16/10] overflow-hidden bg-zinc-50">
                     {p.imageUrl ? (
-                      <img
+                      <Image
                         src={p.imageUrl}
                         alt={p.name}
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                        fill
+                        unoptimized
+                        className="object-cover transition duration-300 group-hover:scale-[1.02]"
+                        sizes="(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 100vw"
                       />
                     ) : (
                       <div className="grid h-full w-full place-items-center text-sm font-semibold text-zinc-400">
@@ -1672,7 +1674,7 @@ export function AdminClient() {
                       <div className="flex min-w-0 items-start gap-3">
                         <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-zinc-200 bg-zinc-50">
                           {iconUrl ? (
-                            <img src={iconUrl} alt="" className="h-5 w-5" loading="lazy" />
+                            <Image src={iconUrl} alt="" width={20} height={20} unoptimized className="h-5 w-5" />
                           ) : (
                             <svg
                               viewBox="0 0 24 24"
@@ -2397,10 +2399,13 @@ export function AdminClient() {
                       </label>
                       <div className="relative h-44 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
                         {draft.imageUrl ? (
-                          <img
+                          <Image
                             src={draft.imageUrl}
                             alt={draft.name || "Imagen del repuesto"}
-                            className="h-full w-full object-cover"
+                            fill
+                            unoptimized
+                            className="object-cover"
+                            sizes="(min-width: 1024px) 42rem, 100vw"
                           />
                         ) : (
                           <div className="grid h-full w-full place-items-center text-sm font-semibold text-zinc-500">

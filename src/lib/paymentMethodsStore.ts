@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirestoreDb } from "@/lib/productsStore";
 
@@ -42,7 +43,7 @@ function normalize(method: PaymentMethod): PaymentMethod {
   };
 }
 
-export async function getPaymentMethods(): Promise<PaymentMethod[]> {
+async function getPaymentMethodsUncached(): Promise<PaymentMethod[]> {
   const db = getFirestoreDb();
   if (db) {
     const snap = await db.collection("paymentMethods").get();
@@ -66,6 +67,11 @@ export async function getPaymentMethods(): Promise<PaymentMethod[]> {
     return [];
   }
 }
+
+export const getPaymentMethods = unstable_cache(getPaymentMethodsUncached, ["payment-methods"], {
+  revalidate: 60,
+  tags: ["payment-methods"],
+});
 
 export async function getEnabledPaymentMethods(): Promise<PaymentMethod[]> {
   const all = await getPaymentMethods();
@@ -100,10 +106,11 @@ export async function savePaymentMethods(nextMethods: PaymentMethod[]) {
     }
 
     await batch.commit();
+    revalidateTag("payment-methods", "max");
     return;
   }
 
   const json = JSON.stringify(deduped, null, 2) + "\n";
   await writeFile(paymentMethodsFilePath, json, "utf8");
+  revalidateTag("payment-methods", "max");
 }
-

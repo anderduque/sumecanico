@@ -118,7 +118,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/products", { cache: "no-store" })
+    fetch("/api/products")
       .then((res) => res.json())
       .then((data: unknown) => {
         if (cancelled) return;
@@ -147,7 +147,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/payment-methods", { cache: "no-store" })
+    fetch("/api/payment-methods")
       .then((res) => res.json())
       .then((data: unknown) => {
         if (cancelled) return;

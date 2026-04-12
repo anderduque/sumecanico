@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { unstable_cache } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 import type { Product } from "@/lib/productTypes";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
@@ -164,11 +164,13 @@ export async function saveProducts(nextProducts: Product[]) {
     }
 
     await batch.commit();
+    revalidateTag("products", "max");
     return;
   }
 
   const json = JSON.stringify(deduped, null, 2) + "\n";
   await writeFile(productsFilePath, json, "utf8");
+  revalidateTag("products", "max");
 }
 
 export async function upsertProduct(next: Product) {
@@ -199,6 +201,7 @@ export async function upsertProduct(next: Product) {
         } as Record<string, unknown>),
         { merge: true },
       );
+    revalidateTag("products", "max");
     return;
   }
 
@@ -215,6 +218,7 @@ export async function deleteProduct(slug: string) {
   const db = getFirestoreDb();
   if (db) {
     await db.collection("products").doc(cleaned).delete();
+    revalidateTag("products", "max");
     return;
   }
 

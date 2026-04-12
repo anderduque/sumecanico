@@ -117,7 +117,7 @@ export default function Home() {
       <section className="relative isolate overflow-hidden bg-zinc-950">
         <div className="absolute inset-0">
           <Image
-            src="/home-hero-mechanic.png"
+            src="/home-hero-mechanic-optimized.jpg"
             alt="Mecánico trabajando en un vehículo"
             fill
             className="object-cover"
@@ -190,7 +190,7 @@ export default function Home() {
                 <div className="relative overflow-hidden rounded-[1.75rem] bg-zinc-100">
                   <div className="relative aspect-[16/10] w-full">
                     <Image
-                      src="/home-engine-service.png"
+                      src="/home-engine-service-optimized.jpg"
                       alt="Trabajo mecánico sobre el motor de un vehículo"
                       fill
                       className="object-cover"
@@ -281,7 +281,7 @@ export default function Home() {
               <div className="overflow-hidden border border-white/10 bg-white/5">
                 <div className="relative aspect-[4/3] w-full">
                   <Image
-                    src="/home-engine-detail.png"
+                    src="/home-engine-detail-optimized.jpg"
                     alt="Servicio mecánico profesional en taller"
                     fill
                     className="object-cover"

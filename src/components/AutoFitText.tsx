@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
 type Props = {
   children: string;
@@ -20,7 +20,7 @@ export function AutoFitText({
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
 
-  const fit = () => {
+  const fit = useCallback(() => {
     const container = containerRef.current;
     const textEl = textRef.current;
     if (!container || !textEl) return;
@@ -33,11 +33,11 @@ export function AutoFitText({
       size -= step;
       textEl.style.fontSize = `${size}px`;
     }
-  };
+  }, [maxFontSize, minFontSize, step]);
 
   useLayoutEffect(() => {
     fit();
-  }, [children]);
+  }, [children, fit]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -45,7 +45,7 @@ export function AutoFitText({
     const ro = new ResizeObserver(() => fit());
     ro.observe(container);
     return () => ro.disconnect();
-  }, []);
+  }, [fit]);
 
   return (
     <div ref={containerRef} className={["w-full overflow-hidden", className].filter(Boolean).join(" ")}>

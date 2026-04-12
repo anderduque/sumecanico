@@ -7,7 +7,7 @@ export async function GET() {
   const products = await getProducts();
   return NextResponse.json(products, {
     headers: {
-      "Cache-Control": "no-store",
+      "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
     },
   });
 }
