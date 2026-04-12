@@ -32,7 +32,7 @@ export default function ServiciosPage() {
             <h1 className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
               Servicios automotrices pensados para resolver de verdad.
             </h1>
-            <p className="mt-5 max-w-3xl text-base leading-8 text-zinc-300 sm:text-lg">
+            <p className="mt-5 max-w-3xl text-justify text-base leading-8 text-zinc-300 sm:text-lg">
               En {services.length} áreas clave, combinamos diagnóstico, ejecución técnica y
               orientación clara para que sepas qué hacer con tu vehículo antes de gastar de más.
             </p>
@@ -76,7 +76,7 @@ export default function ServiciosPage() {
                   <h2 className="text-2xl font-semibold tracking-tight text-white">
                     {service.name}
                   </h2>
-                  <p className="mt-4 flex-1 text-sm leading-8 text-zinc-300">{service.intro}</p>
+                  <p className="mt-4 flex-1 text-justify text-sm leading-8 text-zinc-300">{service.intro}</p>
 
                   <div className="mt-6">
                     <Link

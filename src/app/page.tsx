@@ -135,7 +135,7 @@ export default function Home() {
             <h1 className="mt-5 text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl lg:text-7xl">
               Taller mecánico
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-zinc-200 sm:text-lg">
+            <p className="mt-6 max-w-2xl text-justify text-base leading-7 text-zinc-200 sm:text-lg">
               Mantenimientos, reparaciones y repuestos con una ejecución ordenada y una atención
               más clara. Especialistas en motores para clientes que buscan confianza y resultados.
             </p>
@@ -200,13 +200,13 @@ export default function Home() {
                 </div>
               </div>
 
-              <p className="text-base leading-8 text-zinc-700 sm:text-lg">
+              <p className="text-justify text-base leading-8 text-zinc-700 sm:text-lg">
                 En {site.name}, reunimos la experiencia de un taller especializado con la
                 practicidad de resolver diagnóstico, reparación y repuestos en un solo lugar.
                 Nuestro trabajo parte de una idea simple: explicar bien, reparar con criterio y
                 entregar el vehículo en condiciones.
               </p>
-              <p className="mt-5 text-base leading-8 text-zinc-700 sm:text-lg">
+              <p className="mt-5 text-justify text-base leading-8 text-zinc-700 sm:text-lg">
                 Llevamos más de 20 años atendiendo en Valencia, con foco en motores, mantenimiento
                 y soluciones mecánicas que realmente responden a lo que el vehículo necesita. Sin
                 vueltas, sin sobrecargar el proceso, con atención directa.
@@ -270,7 +270,7 @@ export default function Home() {
               <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
                 Trabajo técnico bien hecho, desde el diagnóstico hasta la entrega.
               </h2>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-300">
+              <p className="mt-5 max-w-2xl text-justify text-base leading-8 text-zinc-300">
                 Revisamos compatibilidad, alcance del trabajo y repuestos antes de cerrar el
                 servicio. Ese orden reduce retrabajos y te da una decisión más clara desde el
                 inicio.

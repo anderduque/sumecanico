@@ -34,6 +34,13 @@ export default function CarritoPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (Object.keys(productsBySlug).length === 0) return;
+    const invalid = lines.filter((l) => !productsBySlug[l.productSlug]);
+    if (invalid.length === 0) return;
+    for (const line of invalid) remove(line.productSlug);
+  }, [lines, productsBySlug, remove]);
+
   const enriched = useMemo(() => {
     return lines
       .map((l) => {
@@ -47,6 +54,8 @@ export default function CarritoPage() {
   const total = useMemo(() => {
     return enriched.reduce((sum, line) => sum + line.product.priceCents * line.quantity, 0);
   }, [enriched]);
+
+  const showEmpty = totalItems === 0 || (Object.keys(productsBySlug).length > 0 && enriched.length === 0);
 
   return (
     <div className="bg-white">
@@ -70,9 +79,9 @@ export default function CarritoPage() {
                 Carrito de compra
               </div>
               <h1 className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
-                Revisa tu selección antes de cotizar.
-              </h1>
-              <p className="mt-5 text-base leading-8 text-zinc-200 sm:text-lg">
+              Revisa tu selección antes de cotizar.
+            </h1>
+            <p className="mt-5 text-justify text-base leading-8 text-zinc-200 sm:text-lg">
                 Validamos compatibilidad, referencia y disponibilidad antes de finalizar. El
                 carrito funciona como base para armar tu pedido correctamente.
               </p>
@@ -87,7 +96,7 @@ export default function CarritoPage() {
 
       <section className="bg-[#f6f3ef]">
         <Container className="py-14 sm:py-16">
-          {totalItems === 0 ? (
+          {showEmpty ? (
             <div className="border border-zinc-200 bg-white p-8">
               <div className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
                 Carrito vacío

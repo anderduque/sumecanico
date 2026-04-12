@@ -93,7 +93,7 @@ export default async function ProductoPage({
             <h1 className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
               {product.name}
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-200 sm:text-lg">
+            <p className="mt-5 max-w-2xl text-justify text-base leading-8 text-zinc-200 sm:text-lg">
               {product.summary}
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -201,7 +201,7 @@ export default async function ProductoPage({
                   <div className="text-3xl font-semibold tracking-tight text-zinc-950">
                     {formatMoney(product.priceCents, { currency: product.currency })}
                   </div>
-                  <p className="mt-3 text-sm leading-7 text-zinc-700">
+                  <p className="mt-3 text-justify text-sm leading-7 text-zinc-700">
                     Agrega este repuesto al carrito y luego confirmamos referencia, compatibilidad
                     y disponibilidad real antes de procesar la reserva.
                   </p>
@@ -211,19 +211,19 @@ export default async function ProductoPage({
                   <div className="mt-6 grid gap-3 border-t border-zinc-200 pt-6">
                     <div className="flex items-start gap-3">
                       <span className="mt-1 h-2 w-2 rounded-full bg-primary" />
-                      <p className="text-sm leading-7 text-zinc-700">
+                      <p className="text-justify text-sm leading-7 text-zinc-700">
                         Validación técnica antes de confirmar la compra.
                       </p>
                     </div>
                     <div className="flex items-start gap-3">
                       <span className="mt-1 h-2 w-2 rounded-full bg-primary" />
-                      <p className="text-sm leading-7 text-zinc-700">
+                      <p className="text-justify text-sm leading-7 text-zinc-700">
                         Soporte por WhatsApp para revisar medidas y compatibilidad.
                       </p>
                     </div>
                     <div className="flex items-start gap-3">
                       <span className="mt-1 h-2 w-2 rounded-full bg-primary" />
-                      <p className="text-sm leading-7 text-zinc-700">
+                      <p className="text-justify text-sm leading-7 text-zinc-700">
                         Precio final sujeto a disponibilidad y referencia exacta.
                       </p>
                     </div>

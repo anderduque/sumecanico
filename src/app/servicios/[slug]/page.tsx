@@ -61,7 +61,7 @@ export default async function ServicioDetallePage({
             <h1 className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
               {service.name}
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-200 sm:text-lg">
+            <p className="mt-5 max-w-2xl text-justify text-base leading-8 text-zinc-200 sm:text-lg">
               {service.intro}
             </p>
 
@@ -96,7 +96,7 @@ export default async function ServicioDetallePage({
             </div>
 
             <div className="lg:col-span-7">
-              <p className="text-base leading-8 text-zinc-700 sm:text-lg">{service.whyItMatters}</p>
+              <p className="text-justify text-base leading-8 text-zinc-700 sm:text-lg">{service.whyItMatters}</p>
 
               <div className="mt-8 grid gap-6 md:grid-cols-2">
                 <div className="border border-zinc-200 bg-zinc-50 p-6">
@@ -150,7 +150,7 @@ export default async function ServicioDetallePage({
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-primary text-sm font-semibold text-primary">
                     {index + 1}
                   </div>
-                  <p className="text-sm leading-7 text-zinc-700">{step}</p>
+                  <p className="text-justify text-sm leading-7 text-zinc-700">{step}</p>
                 </div>
               ))}
             </div>
@@ -168,7 +168,7 @@ export default async function ServicioDetallePage({
               <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-zinc-950 sm:text-4xl">
                 Respuestas claras antes de agendar
               </h2>
-              <p className="mt-4 text-base leading-8 text-zinc-600">
+              <p className="mt-4 text-justify text-base leading-8 text-zinc-600">
                 Si necesitas más contexto sobre el servicio, estos puntos suelen resolver las
                 dudas más comunes antes de cotizar.
               </p>

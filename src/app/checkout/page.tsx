@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/cart/CartProvider";
 import { Container } from "@/components/Container";
 import { formatMoney } from "@/lib/money";
@@ -64,8 +65,20 @@ function splitLines(text: string) {
     .filter(Boolean);
 }
 
+type FieldKey = "fullName" | "idNumber" | "phone" | "email" | "address" | "paymentMethod";
+
+function fieldInputClass(hasError: boolean) {
+  return [
+    "w-full rounded-xl border bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none",
+    hasError
+      ? "border-rose-300 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/15"
+      : "border-zinc-200 focus:border-primary focus:ring-4 focus:ring-primary/15",
+  ].join(" ");
+}
+
 export default function CheckoutPage() {
-  const { lines, totalItems } = useCart();
+  const router = useRouter();
+  const { lines, totalItems, remove, clear } = useCart();
   const [productsBySlug, setProductsBySlug] = useState<Record<string, Product>>({});
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
@@ -78,6 +91,30 @@ export default function CheckoutPage() {
   const [paymentMethodId, setPaymentMethodId] = useState<string>("");
   const [paymentReference, setPaymentReference] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [touched, setTouched] = useState<Record<FieldKey, boolean>>({
+    fullName: false,
+    idNumber: false,
+    phone: false,
+    email: false,
+    address: false,
+    paymentMethod: false,
+  });
+  const [fieldErrors, setFieldErrors] = useState<Record<FieldKey, string | null>>({
+    fullName: null,
+    idNumber: null,
+    phone: null,
+    email: null,
+    address: null,
+    paymentMethod: null,
+  });
+
+  const fullNameRef = useRef<HTMLInputElement>(null);
+  const idNumberRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const addressRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +137,13 @@ export default function CheckoutPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (Object.keys(productsBySlug).length === 0) return;
+    const invalid = lines.filter((l) => !productsBySlug[l.productSlug]);
+    if (invalid.length === 0) return;
+    for (const line of invalid) remove(line.productSlug);
+  }, [lines, productsBySlug, remove]);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +185,8 @@ export default function CheckoutPage() {
     return enriched.reduce((sum, line) => sum + line.product.priceCents * line.quantity, 0);
   }, [enriched]);
 
+  const showEmpty = totalItems === 0 || (Object.keys(productsBySlug).length > 0 && enriched.length === 0);
+
   const selectedPaymentMethod = useMemo(() => {
     return paymentMethods.find((m) => m.id === effectivePaymentMethodId) ?? null;
   }, [effectivePaymentMethodId, paymentMethods]);
@@ -148,6 +194,83 @@ export default function CheckoutPage() {
   const selectedCountry = useMemo(() => {
     return latamCountries.find((item) => item.code === countryCode) ?? latamCountries[0];
   }, [countryCode]);
+
+  function validateFullName(value: string) {
+    const trimmed = value.trim().replace(/\s+/g, " ");
+    if (!trimmed) return "Nombre completo es obligatorio.";
+    if (!trimmed.includes(" ")) return "Ingresa nombre y apellido.";
+    return null;
+  }
+
+  function validateIdNumber(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return "Cédula es obligatoria.";
+    if (!/^\d+$/.test(trimmed)) return "La cédula solo puede contener números.";
+    return null;
+  }
+
+  function validatePhone(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return "Teléfono es obligatorio.";
+    if (!/^\d+$/.test(trimmed)) return "El teléfono solo puede contener números.";
+    if (trimmed.length !== selectedCountry.phoneLength) {
+      return `Ingresa ${selectedCountry.phoneLength} dígitos después de ${selectedCountry.code}.`;
+    }
+    return null;
+  }
+
+  function validateEmail(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (!emailPattern.test(trimmed)) return "Ingresa un correo válido o deja ese campo vacío.";
+    return null;
+  }
+
+  function validateAddress(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return "Dirección es obligatoria.";
+    return null;
+  }
+
+  function validatePaymentMethod(method: PaymentMethod | null) {
+    if (!method) return "Selecciona un método de pago.";
+    return null;
+  }
+
+  function touchField(key: FieldKey) {
+    setTouched((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+  }
+
+  function setFieldError(key: FieldKey, message: string | null) {
+    setFieldErrors((prev) => (prev[key] === message ? prev : { ...prev, [key]: message }));
+  }
+
+  function validateSequential(method: PaymentMethod | null) {
+    const nextFullName = fullName.trim();
+    const nextId = idNumber.trim();
+    const nextPhone = phone.trim();
+    const nextEmail = email.trim();
+    const nextAddress = address.trim();
+
+    const checks: { key: FieldKey; message: string | null; ref?: { current: HTMLInputElement | null } }[] = [
+      { key: "fullName", message: validateFullName(nextFullName), ref: fullNameRef },
+      { key: "idNumber", message: validateIdNumber(nextId), ref: idNumberRef },
+      { key: "phone", message: validatePhone(nextPhone), ref: phoneRef },
+      { key: "email", message: validateEmail(nextEmail), ref: emailRef },
+      { key: "address", message: validateAddress(nextAddress), ref: addressRef },
+      { key: "paymentMethod", message: validatePaymentMethod(method) },
+    ];
+
+    for (const check of checks) {
+      setFieldError(check.key, check.message);
+      if (check.message) {
+        touchField(check.key);
+        check.ref?.current?.focus();
+        return false;
+      }
+    }
+    return true;
+  }
 
   return (
     <Container className="py-10 sm:py-14">
@@ -162,7 +285,7 @@ export default function CheckoutPage() {
         <div className="text-lg font-semibold text-zinc-950">Tus Datos</div>
       </div>
 
-      {totalItems === 0 ? (
+      {showEmpty ? (
         <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-8">
           <div className="text-base font-semibold text-zinc-950">Tu carrito está vacío</div>
           <p className="mt-2 text-sm text-zinc-700">Agrega repuestos para continuar.</p>
@@ -186,25 +309,56 @@ export default function CheckoutPage() {
                   e.preventDefault();
                 }}
               >
-                <input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
-                  placeholder="Nombre Completo"
-                  autoComplete="off"
-                  name="full_name"
-                />
-                <input
-                  value={idNumber}
-                  onChange={(e) => setIdNumber(onlyDigits(e.target.value))}
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
-                  placeholder="Cédula de Identidad"
-                  autoComplete="off"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={12}
-                  name="id_number"
-                />
+                <div>
+                  <input
+                    ref={fullNameRef}
+                    value={fullName}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setFullName(next);
+                      if (!touched.fullName && !fieldErrors.fullName) return;
+                      setFieldError("fullName", validateFullName(next));
+                    }}
+                    onBlur={() => {
+                      touchField("fullName");
+                      setFieldError("fullName", validateFullName(fullName));
+                    }}
+                    className={fieldInputClass(!!fieldErrors.fullName && touched.fullName)}
+                    placeholder="Nombre Completo"
+                    autoComplete="off"
+                    name="full_name"
+                  />
+                  {touched.fullName && fieldErrors.fullName ? (
+                    <div className="mt-2 text-xs font-semibold text-rose-700">{fieldErrors.fullName}</div>
+                  ) : null}
+                </div>
+
+                <div>
+                  <input
+                    ref={idNumberRef}
+                    value={idNumber}
+                    onChange={(e) => {
+                      const next = onlyDigits(e.target.value);
+                      setIdNumber(next);
+                      if (!touched.idNumber && !fieldErrors.idNumber) return;
+                      setFieldError("idNumber", validateIdNumber(next));
+                    }}
+                    onBlur={() => {
+                      touchField("idNumber");
+                      setFieldError("idNumber", validateIdNumber(idNumber));
+                    }}
+                    className={fieldInputClass(!!fieldErrors.idNumber && touched.idNumber)}
+                    placeholder="Cédula de Identidad"
+                    autoComplete="off"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={12}
+                    name="id_number"
+                  />
+                  {touched.idNumber && fieldErrors.idNumber ? (
+                    <div className="mt-2 text-xs font-semibold text-rose-700">{fieldErrors.idNumber}</div>
+                  ) : null}
+                </div>
                 <div className="grid gap-4 sm:grid-cols-12">
                   <div className="sm:col-span-3">
                     <label className="sr-only" htmlFor="country_code">
@@ -217,6 +371,8 @@ export default function CheckoutPage() {
                         onChange={(e) => {
                           setCountryCode(e.target.value as (typeof latamCountries)[number]["code"]);
                           setPhone("");
+                          setTouched((prev) => ({ ...prev, phone: false }));
+                          setFieldError("phone", null);
                         }}
                         className="h-[46px] w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 pr-8 text-sm font-semibold text-zinc-700 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
                         autoComplete="off"
@@ -235,9 +391,19 @@ export default function CheckoutPage() {
                   </div>
                   <div className="sm:col-span-9">
                     <input
+                      ref={phoneRef}
                       value={phone}
-                      onChange={(e) => setPhone(onlyDigits(e.target.value))}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
+                      onChange={(e) => {
+                        const next = onlyDigits(e.target.value);
+                        setPhone(next);
+                        if (!touched.phone && !fieldErrors.phone) return;
+                        setFieldError("phone", validatePhone(next));
+                      }}
+                      onBlur={() => {
+                        touchField("phone");
+                        setFieldError("phone", validatePhone(phone));
+                      }}
+                      className={fieldInputClass(!!fieldErrors.phone && touched.phone)}
                       placeholder="Teléfono"
                       inputMode="numeric"
                       pattern="[0-9]*"
@@ -245,32 +411,66 @@ export default function CheckoutPage() {
                       maxLength={selectedCountry.phoneLength}
                       name="phone"
                     />
-                    <div className="mt-2 text-xs text-zinc-500">
-                      {selectedCountry.flag} {selectedCountry.label}: ingresa {selectedCountry.phoneLength} dígitos después de {selectedCountry.code}.
-                    </div>
+                    {touched.phone && fieldErrors.phone ? (
+                      <div className="mt-2 text-xs font-semibold text-rose-700">{fieldErrors.phone}</div>
+                    ) : (
+                      <div className="mt-2 text-xs text-zinc-500">
+                        {selectedCountry.flag} {selectedCountry.label}: ingresa {selectedCountry.phoneLength} dígitos después de{" "}
+                        {selectedCountry.code}.
+                      </div>
+                    )}
                   </div>
                 </div>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
-                  placeholder="Correo Electrónico (Opcional)"
-                  inputMode="email"
-                  autoComplete="off"
-                  name="email"
-                />
                 <div>
                   <input
+                    ref={emailRef}
+                    value={email}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setEmail(next);
+                      if (!touched.email && !fieldErrors.email) return;
+                      setFieldError("email", validateEmail(next));
+                    }}
+                    onBlur={() => {
+                      touchField("email");
+                      setFieldError("email", validateEmail(email));
+                    }}
+                    className={fieldInputClass(!!fieldErrors.email && touched.email)}
+                    placeholder="Correo Electrónico (Opcional)"
+                    inputMode="email"
+                    autoComplete="off"
+                    name="email"
+                  />
+                  {touched.email && fieldErrors.email ? (
+                    <div className="mt-2 text-xs font-semibold text-rose-700">{fieldErrors.email}</div>
+                  ) : null}
+                </div>
+                <div>
+                  <input
+                    ref={addressRef}
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setAddress(next);
+                      if (!touched.address && !fieldErrors.address) return;
+                      setFieldError("address", validateAddress(next));
+                    }}
+                    onBlur={() => {
+                      touchField("address");
+                      setFieldError("address", validateAddress(address));
+                    }}
+                    className={fieldInputClass(!!fieldErrors.address && touched.address)}
                     placeholder="Dirección Completa"
                     autoComplete="off"
                     name="address"
                   />
-                  <div className="mt-2 text-xs text-zinc-500">
-                    Sugerencia: calle, número de casa o apartamento, sector y ciudad.
-                  </div>
+                  {touched.address && fieldErrors.address ? (
+                    <div className="mt-2 text-xs font-semibold text-rose-700">{fieldErrors.address}</div>
+                  ) : (
+                    <div className="mt-2 text-xs text-zinc-500">
+                      Sugerencia: calle, número de casa o apartamento, sector y ciudad.
+                    </div>
+                  )}
                 </div>
                 <div className="relative">
                   <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-500">
@@ -290,7 +490,10 @@ export default function CheckoutPage() {
                       <button
                         key={m.id}
                         type="button"
-                        onClick={() => setPaymentMethodId(m.id)}
+                        onClick={() => {
+                          setPaymentMethodId(m.id);
+                          setFieldError("paymentMethod", null);
+                        }}
                         className={[
                           "w-full rounded-xl border px-4 py-3 text-left shadow-sm transition-colors",
                           active
@@ -318,6 +521,9 @@ export default function CheckoutPage() {
                     );
                   })}
                 </div>
+                {touched.paymentMethod && fieldErrors.paymentMethod ? (
+                  <div className="text-xs font-semibold text-rose-700">{fieldErrors.paymentMethod}</div>
+                ) : null}
 
                 <input
                   value={paymentReference}
@@ -349,51 +555,19 @@ export default function CheckoutPage() {
                   </Link>
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:brightness-110"
-                    onClick={() => {
+                    disabled={submitting}
+                    className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+                    onClick={async () => {
+                      if (submitting) return;
                       setError(null);
                       const method = selectedPaymentMethod;
-                      if (!method) {
-                        setError("Selecciona un método de pago.");
-                        return;
-                      }
-                      const nextFullName = fullName.trim();
+                      if (!validateSequential(method)) return;
+
+                      const normalizedFullName = fullName.trim().replace(/\s+/g, " ").trim();
                       const nextId = idNumber.trim();
                       const nextPhone = phone.trim();
                       const nextEmail = email.trim();
                       const nextAddress = address.trim();
-                      const missingFields: string[] = [];
-                      if (!nextFullName) missingFields.push("nombre");
-                      if (!nextId) missingFields.push("cédula");
-                      if (!nextPhone) missingFields.push("teléfono");
-                      if (!nextAddress) missingFields.push("dirección");
-                      if (missingFields.length > 0) {
-                        setError(`Completa los siguientes campos: ${missingFields.join(", ")}.`);
-                        return;
-                      }
-                      const normalizedFullName = nextFullName.replace(/\s+/g, " ").trim();
-                      if (!normalizedFullName.includes(" ")) {
-                        setError("Ingresa al menos nombre y apellido.");
-                        return;
-                      }
-                      if (!/^\d+$/.test(nextId)) {
-                        setError("La cédula solo puede contener números.");
-                        return;
-                      }
-                      if (!/^\d+$/.test(nextPhone)) {
-                        setError("El teléfono solo puede contener números.");
-                        return;
-                      }
-                      if (nextPhone.length !== selectedCountry.phoneLength) {
-                        setError(
-                          `El teléfono para ${selectedCountry.label} debe tener ${selectedCountry.phoneLength} dígitos después de ${selectedCountry.code}.`,
-                        );
-                        return;
-                      }
-                      if (nextEmail && !emailPattern.test(nextEmail)) {
-                        setError("Ingresa un correo electrónico válido o deja ese campo vacío.");
-                        return;
-                      }
                       const message = buildCheckoutMessage({
                         items: enriched.map((x) => ({ name: x.product.name, quantity: x.quantity })),
                         totalCents,
@@ -402,14 +576,62 @@ export default function CheckoutPage() {
                         phone: `${selectedCountry.code} ${nextPhone}`,
                         email: nextEmail || undefined,
                         address: nextAddress,
-                        paymentMethodName: method.name,
+                        paymentMethodName: method ? method.name : "",
                         paymentReference: paymentReference.trim() ? paymentReference.trim() : undefined,
                       });
+                      const phoneE164 = `${selectedCountry.code}${nextPhone}`.replace(/\s+/g, "");
+                      const orderPayload = {
+                        customer: {
+                          fullName: normalizedFullName,
+                          idNumber: nextId,
+                          phoneE164,
+                          email: nextEmail || undefined,
+                          address: nextAddress,
+                        },
+                        items: enriched.map((x) => ({
+                          productSlug: x.product.slug,
+                          name: x.product.name,
+                          quantity: x.quantity,
+                          priceCents: x.product.priceCents,
+                          currency: x.product.currency,
+                        })),
+                        totalCents,
+                        currency: "USD",
+                        payment: {
+                          methodId: method ? method.id : "",
+                          methodName: method ? method.name : "",
+                          reference: paymentReference.trim() ? paymentReference.trim() : undefined,
+                        },
+                        message,
+                      };
+                      setSubmitting(true);
+                      try {
+                        const res = await fetch("/api/orders", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(orderPayload),
+                        });
+                        if (!res.ok) {
+                          setError(
+                            "No se pudo registrar la orden en el sistema. Igual abrimos WhatsApp para finalizar con el asesor.",
+                          );
+                        }
+                      } catch {
+                        setError(
+                          "No se pudo registrar la orden en el sistema. Igual abrimos WhatsApp para finalizar con el asesor.",
+                        );
+                      } finally {
+                        setSubmitting(false);
+                      }
                       const url = whatsAppWaMeUrl(message);
                       window.open(url, "_blank", "noopener,noreferrer");
+                      
+                      // Empty cart and go back to store/home after successful submission
+                      clear();
+                      router.push("/tienda");
                     }}
                   >
-                    Reservar y Enviar
+                    {submitting ? "Enviando..." : "Reservar y Enviar"}
                   </button>
                 </div>
               </form>

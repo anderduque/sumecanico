@@ -48,7 +48,7 @@ export function Footer() {
 
             <a
               className="inline-flex items-center gap-3 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/15"
-              href={`mailto:${site.email}`}
+              href="mailto:anderduquem19@gmail.com"
             >
               Soporte técnico
               <span className="text-emerald-100/80">Contactar</span>

@@ -64,7 +64,7 @@ export default function ContactoPage() {
             <h1 className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
               Escríbenos y coordinamos tu atención.
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-200 sm:text-lg">
+            <p className="mt-5 max-w-2xl text-justify text-base leading-8 text-zinc-200 sm:text-lg">
               Si necesitas cotizar un servicio, confirmar un repuesto o ubicar el taller, aquí
               tienes los canales directos para resolverlo sin vueltas.
             </p>
@@ -130,7 +130,7 @@ export default function ContactoPage() {
               <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-zinc-950 sm:text-4xl">
                 Elige cómo quieres contactarnos
               </h2>
-              <p className="mt-4 text-base leading-8 text-zinc-600">
+              <p className="mt-4 text-justify text-base leading-8 text-zinc-600">
                 Puedes escribirnos por WhatsApp, abrir ubicación en Maps, enviarnos un correo o
                 revisar nuestras redes.
               </p>

@@ -10,9 +10,79 @@ import { site } from "@/lib/site";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 
+type OrderStatus = "new" | "taken" | "closed";
+
+type OrderRecord = {
+  id: string;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt?: string;
+  takenAt?: string;
+  closedAt?: string;
+  customer: {
+    fullName: string;
+    idNumber: string;
+    phoneE164: string;
+    email?: string;
+    address: string;
+  };
+  items: {
+    productSlug: string;
+    name: string;
+    quantity: number;
+    priceCents: number;
+    currency: string;
+  }[];
+  totalCents: number;
+  currency: string;
+  payment: {
+    methodId: string;
+    methodName: string;
+    reference?: string;
+  };
+  message: string;
+};
+
 function toAuthHeader(user: string, password: string) {
   const token = btoa(`${user}:${password}`);
   return `Basic ${token}`;
+}
+
+function formatOrderDate(iso: string) {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return iso;
+  return d.toLocaleString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function phoneToWhatsAppDigits(phoneE164: string) {
+  return phoneE164.replace(/\D+/g, "");
+}
+
+function buildCustomerWhatsAppUrl(phoneE164: string, message: string) {
+  const digits = phoneToWhatsAppDigits(phoneE164);
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+}
+
+function buildOrderReplyMessage(order: OrderRecord) {
+  const firstName = order.customer.fullName.trim().split(/\s+/)[0] || "Hola";
+  const lines = [
+    `Hola ${firstName}, soy del taller ${site.name}.`,
+    "",
+    `Recibimos tu solicitud de reserva de repuestos (orden ${order.id}).`,
+    "Para confirmar compatibilidad y disponibilidad, ¿me indicas marca, modelo, año y motor de tu vehículo?",
+    "",
+    "Resumen:",
+    ...order.items.map((i) => `- ${i.quantity} x ${i.name}`),
+    "",
+    "Quedo atento.",
+  ];
+  return lines.join("\n");
 }
 
 function emptyProduct(): Product {
@@ -413,7 +483,7 @@ export function AdminClient() {
   const [priceInput, setPriceInput] = useState("");
   const [inventoryInput, setInventoryInput] = useState("");
 
-  const [tab, setTab] = useState<"dashboard" | "products" | "payments" | "security">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "products" | "payments" | "orders" | "security">("dashboard");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [, setPaymentsState] = useState<LoadState>("idle");
   const [paymentsError, setPaymentsError] = useState<string | null>(null);
@@ -438,6 +508,11 @@ export function AdminClient() {
   const [securityError, setSecurityError] = useState<string | null>(null);
   const [securitySaved, setSecuritySaved] = useState<string | null>(null);
   const [securityCanPersist, setSecurityCanPersist] = useState<boolean | null>(null);
+
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [ordersState, setOrdersState] = useState<LoadState>("idle");
+  const [ordersError, setOrdersError] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   const isEditingExisting = useMemo(() => {
     return !!draft.slug && products.some((p) => p.slug === draft.slug);
@@ -486,6 +561,10 @@ export function AdminClient() {
     setSecurityError(null);
     setSecuritySaved(null);
     setSecurityCanPersist(null);
+    setOrders([]);
+    setOrdersState("idle");
+    setOrdersError(null);
+    setSelectedOrderId(null);
   }, []);
 
   function clearStoredAuth() {
@@ -716,11 +795,46 @@ export function AdminClient() {
     }
   }
 
+  async function loadOrders(nextAuthHeader: string): Promise<boolean> {
+    setOrdersState("loading");
+    setOrdersError(null);
+    try {
+      const res = await fetch("/api/admin/orders", {
+        headers: { Authorization: nextAuthHeader },
+        cache: "no-store",
+      });
+      if (res.status === 401) {
+        clearStoredAuth();
+        setAuthHeader(null);
+        setOrdersState("error");
+        setOrdersError("Credenciales inválidas o no configuradas.");
+        return false;
+      }
+      if (!res.ok) {
+        setOrdersState("error");
+        setOrdersError("No se pudieron cargar las órdenes.");
+        return false;
+      }
+      const data = (await res.json()) as unknown;
+      const list = Array.isArray(data) ? (data as OrderRecord[]) : [];
+      setOrders(list);
+      if (!selectedOrderId && list[0]?.id) setSelectedOrderId(list[0].id);
+      setOrdersState("ready");
+      bumpActivity();
+      return true;
+    } catch {
+      setOrdersState("error");
+      setOrdersError("No se pudieron cargar las órdenes.");
+      return false;
+    }
+  }
+
   useEffect(() => {
     if (!authHeader) return;
     const t = window.setTimeout(() => {
       void load(authHeader);
       void loadPaymentMethods(authHeader);
+      void loadOrders(authHeader);
     }, 0);
     return () => window.clearTimeout(t);
   }, [authHeader]);
@@ -1178,7 +1292,44 @@ export function AdminClient() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#f6f3ef]">
+    <div className="min-h-dvh bg-[#f6f3ef] pt-16">
+      <div className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-zinc-950 text-white">
+        <Container className="flex items-center justify-between py-3">
+          <div className="flex items-center gap-3">
+            <div className="relative h-8 w-28 shrink-0">
+              <Image
+                src={site.logoPath}
+                alt={`${site.name} logo`}
+                fill
+                className="object-contain"
+                sizes="112px"
+                priority
+              />
+            </div>
+            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
+              Módulo interno
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-white/10"
+              onClick={() => setTab("security")}
+            >
+              Contraseña
+            </button>
+            <button
+              type="button"
+              className="border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-white/10"
+              onClick={logout}
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </Container>
+      </div>
+
       <section className="relative isolate overflow-hidden bg-zinc-950 text-white">
         <div className="absolute inset-0">
           <Image
@@ -1194,21 +1345,6 @@ export function AdminClient() {
 
         <Container className="relative py-14 sm:py-16">
           <div className="max-w-3xl">
-            <div className="flex items-center gap-3">
-              <div className="relative h-10 w-32 shrink-0">
-                <Image
-                  src={site.logoPath}
-                  alt={`${site.name} logo`}
-                  fill
-                  className="object-contain"
-                  sizes="128px"
-                  priority
-                />
-              </div>
-              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
-                Módulo interno
-              </div>
-            </div>
             <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
               {tab === "dashboard"
                 ? "Dashboard de administración"
@@ -1216,15 +1352,19 @@ export function AdminClient() {
                 ? "Repuestos"
                 : tab === "payments"
                 ? "Métodos de pago"
+                : tab === "orders"
+                ? "Órdenes"
                 : "Seguridad"}
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-zinc-200">
+            <p className="mt-4 max-w-2xl text-justify text-base leading-8 text-zinc-200">
               {tab === "dashboard"
                 ? "Accede a los módulos principales para gestionar catálogo, pagos y configuración."
                 : tab === "products"
                 ? "Administra repuestos, imágenes, precios, compatibilidad e inventario."
                 : tab === "payments"
                 ? "Configura los métodos de pago visibles y su información operativa."
+                : tab === "orders"
+                ? "Revisa las reservas enviadas desde checkout, toma la orden y responde al cliente."
                 : "Actualiza la clave de acceso del módulo administrativo."}
             </p>
           </div>
@@ -1232,42 +1372,27 @@ export function AdminClient() {
       </section>
 
       <Container className="py-10 sm:py-14">
-      <div className="fixed right-4 top-4 z-50 flex items-center gap-2">
-        <button
-          type="button"
-          className="border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50"
-          onClick={() => setTab("security")}
-        >
-          Contraseña
-        </button>
-        <button
-          type="button"
-          className="border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50"
-          onClick={logout}
-        >
-          Cerrar sesión
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
-            {site.name}
+        <div className="flex flex-col gap-3">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+              {site.name}
+            </div>
+            <p className="mt-2 text-sm text-zinc-700">
+              {tab === "dashboard"
+                ? "Elige un módulo para gestionar."
+                : tab === "products"
+                ? "Agrega/edita repuestos con imagen, precio y cantidad."
+                : tab === "payments"
+                ? "Configura métodos de pago visibles en la tienda."
+                : tab === "orders"
+                ? "Gestiona órdenes recibidas desde checkout."
+                : "Cambia la clave de acceso del administrador."}
+            </p>
           </div>
-          <p className="mt-2 text-sm text-zinc-700">
-            {tab === "dashboard"
-              ? "Elige un módulo para gestionar."
-              : tab === "products"
-              ? "Agrega/edita repuestos con imagen, precio y cantidad."
-              : tab === "payments"
-              ? "Configura métodos de pago visibles en la tienda."
-              : "Cambia la clave de acceso del administrador."}
-          </p>
         </div>
-      </div>
 
       {tab === "dashboard" ? (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
           <button
             type="button"
             onClick={() => setTab("products")}
@@ -1299,6 +1424,23 @@ export function AdminClient() {
               <div>
                 <div className="text-sm font-semibold text-zinc-950">Métodos de pago</div>
                 <div className="text-xs text-zinc-600">Configura los medios aceptados</div>
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("orders")}
+            className="group border border-zinc-200 bg-white p-6 text-left shadow-sm transition-colors hover:border-primary/60 hover:bg-zinc-50"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center border border-zinc-200 bg-zinc-50 text-zinc-700">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                  <path d="M7 2a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1V4a2 2 0 0 0-2-2H7Zm0 2h10v2H7V4Zm13 6H4v10h16V10ZM7 13h6v2H7v-2Z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-zinc-950">Órdenes</div>
+                <div className="text-xs text-zinc-600">Toma y responde reservas</div>
               </div>
             </div>
           </button>
@@ -1335,6 +1477,18 @@ export function AdminClient() {
             onClick={() => setTab("payments")}
           >
             Métodos de pago
+          </button>
+          <button
+            type="button"
+            className={[
+              "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+              tab === "orders"
+                ? "bg-primary text-white"
+                : "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50",
+            ].join(" ")}
+            onClick={() => setTab("orders")}
+          >
+            Órdenes
           </button>
         </div>
       )}
@@ -1600,6 +1754,333 @@ export function AdminClient() {
                   No hay métodos de pago.
                 </div>
               ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {tab === "orders" ? (
+        <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white">
+          <div className="border-b border-zinc-200 px-6 py-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">Checkout</div>
+                <div className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-zinc-950">Órdenes</div>
+                <div className="mt-3 text-sm leading-7 text-zinc-600 sm:text-base">
+                  Reservas enviadas desde “Reservar y Enviar”. Toma la orden y responde al cliente directamente.
+                </div>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                  onClick={() => {
+                    if (!authHeader) return;
+                    void loadOrders(authHeader);
+                  }}
+                >
+                  Actualizar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-6">
+            {ordersError ? (
+              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+                {ordersError}
+              </div>
+            ) : null}
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Nuevas</div>
+                <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
+                  {orders.filter((o) => o.status === "new").length}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">En proceso</div>
+                <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
+                  {orders.filter((o) => o.status === "taken").length}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Cerradas</div>
+                <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
+                  {orders.filter((o) => o.status === "closed").length}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-12">
+              <div className="lg:col-span-5">
+                <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+                  <div className="border-b border-zinc-200 px-4 py-3 text-sm font-semibold text-zinc-950">
+                    Órdenes recientes
+                  </div>
+                  <div className="divide-y divide-zinc-200">
+                    {orders.length ? (
+                      orders.map((o) => {
+                        const active = o.id === selectedOrderId;
+                        return (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => setSelectedOrderId(o.id)}
+                            className={[
+                              "w-full px-4 py-4 text-left transition",
+                              active ? "bg-primary/5" : "bg-white hover:bg-zinc-50",
+                            ].join(" ")}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-semibold text-zinc-950">
+                                  {o.customer?.fullName?.trim() ? o.customer.fullName : "Cliente"}
+                                </div>
+                                <div className="mt-1 text-xs text-zinc-600">{formatOrderDate(o.createdAt)}</div>
+                              </div>
+                              <span
+                                className={[
+                                  "shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold",
+                                  o.status === "new"
+                                    ? "bg-amber-50 text-amber-900"
+                                    : o.status === "taken"
+                                    ? "bg-blue-50 text-blue-900"
+                                    : "bg-emerald-50 text-emerald-900",
+                                ].join(" ")}
+                              >
+                                {o.status === "new" ? "Nueva" : o.status === "taken" ? "En proceso" : "Cerrada"}
+                              </span>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between text-xs text-zinc-600">
+                              <span>{o.items?.reduce((sum, i) => sum + (i.quantity || 0), 0) ?? 0} ítem(s)</span>
+                              <span className="font-semibold text-zinc-900">
+                                {formatMoney(o.totalCents, { currency: o.currency || "USD" })}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })
+                    ) : ordersState === "loading" ? (
+                      <div className="px-4 py-6 text-sm text-zinc-600">Cargando órdenes...</div>
+                    ) : (
+                      <div className="px-4 py-6 text-sm text-zinc-600">No hay órdenes registradas.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-7">
+                {(() => {
+                  const selected = orders.find((o) => o.id === selectedOrderId) ?? orders[0] ?? null;
+                  if (!selected) {
+                    return (
+                      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-700">
+                        Selecciona una orden para ver los detalles.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+                      <div className="border-b border-zinc-200 px-6 py-5">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Orden</div>
+                            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950">
+                              {selected.id}
+                            </div>
+                            <div className="mt-1 text-sm text-zinc-600">{formatOrderDate(selected.createdAt)}</div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                              onClick={() => {
+                                const reply = buildOrderReplyMessage(selected);
+                                const url = buildCustomerWhatsAppUrl(selected.customer.phoneE164, reply);
+                                window.open(url, "_blank", "noopener,noreferrer");
+                              }}
+                            >
+                              Responder por WhatsApp
+                            </button>
+                            {selected.customer.email ? (
+                              <a
+                                className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                                href={`mailto:${encodeURIComponent(selected.customer.email)}?subject=${encodeURIComponent(
+                                  `Orden ${selected.id} - ${site.name}`,
+                                )}&body=${encodeURIComponent(buildOrderReplyMessage(selected))}`}
+                              >
+                                Enviar email
+                              </a>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled
+                                className="cursor-not-allowed rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 opacity-50"
+                              >
+                                Enviar email
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="px-6 py-6">
+                        <div className="grid gap-6 lg:grid-cols-12">
+                          <div className="lg:col-span-7">
+                            <div className="text-sm font-semibold text-zinc-950">Cliente</div>
+                            <div className="mt-3 grid gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+                              <div>
+                                <span className="font-semibold text-zinc-900">Nombre:</span> {selected.customer.fullName}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-zinc-900">Cédula:</span> {selected.customer.idNumber}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-zinc-900">Teléfono:</span> {selected.customer.phoneE164}
+                              </div>
+                              {selected.customer.email ? (
+                                <div>
+                                  <span className="font-semibold text-zinc-900">Email:</span> {selected.customer.email}
+                                </div>
+                              ) : null}
+                              <div>
+                                <span className="font-semibold text-zinc-900">Dirección:</span> {selected.customer.address}
+                              </div>
+                            </div>
+
+                            <div className="mt-6 text-sm font-semibold text-zinc-950">Repuestos</div>
+                            <div className="mt-3 overflow-hidden rounded-xl border border-zinc-200">
+                              <div className="divide-y divide-zinc-200">
+                                {selected.items.map((i) => (
+                                  <div key={`${selected.id}-${i.productSlug}-${i.name}`} className="px-4 py-3 text-sm">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div className="min-w-0">
+                                        <div className="font-semibold text-zinc-950">{i.name}</div>
+                                        <div className="mt-1 text-xs text-zinc-600">{i.productSlug}</div>
+                                      </div>
+                                      <div className="shrink-0 text-right">
+                                        <div className="text-xs text-zinc-600">Cantidad</div>
+                                        <div className="font-semibold text-zinc-950">{i.quantity}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50 px-4 py-3 text-sm">
+                                <span className="font-semibold text-zinc-900">Total sugerido</span>
+                                <span className="font-semibold text-zinc-950">
+                                  {formatMoney(selected.totalCents, { currency: selected.currency || "USD" })}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="mt-6 text-sm font-semibold text-zinc-950">Mensaje enviado</div>
+                            <div className="mt-3 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm leading-7 text-zinc-700">
+                              {selected.message?.trim() ? selected.message : "—"}
+                            </div>
+                          </div>
+
+                          <div className="lg:col-span-5">
+                            <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                              <div className="text-sm font-semibold text-zinc-950">Estado</div>
+                              <div className="mt-2 text-sm text-zinc-700">
+                                {selected.status === "new"
+                                  ? "Nueva"
+                                  : selected.status === "taken"
+                                  ? "En proceso"
+                                  : "Cerrada"}
+                              </div>
+
+                              <div className="mt-4 grid gap-2">
+                                {selected.status === "new" ? (
+                                  <button
+                                    type="button"
+                                    className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white hover:brightness-90"
+                                    onClick={async () => {
+                                      if (!authHeader) return;
+                                      setOrdersError(null);
+                                      const res = await fetch("/api/admin/orders", {
+                                        method: "PUT",
+                                        headers: {
+                                          Authorization: authHeader,
+                                          "Content-Type": "application/json",
+                                        },
+                                        body: JSON.stringify({ id: selected.id, status: "taken" }),
+                                      });
+                                      if (res.status === 401) {
+                                        clearStoredAuth();
+                                        setAuthHeader(null);
+                                        setOrdersError("Credenciales inválidas o no configuradas.");
+                                        return;
+                                      }
+                                      if (!res.ok) {
+                                        setOrdersError("No se pudo actualizar el estado de la orden.");
+                                        return;
+                                      }
+                                      await loadOrders(authHeader);
+                                      setSelectedOrderId(selected.id);
+                                    }}
+                                  >
+                                    Tomar orden
+                                  </button>
+                                ) : null}
+
+                                {selected.status !== "closed" ? (
+                                  <button
+                                    type="button"
+                                    className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                                    onClick={async () => {
+                                      if (!authHeader) return;
+                                      setOrdersError(null);
+                                      const res = await fetch("/api/admin/orders", {
+                                        method: "PUT",
+                                        headers: {
+                                          Authorization: authHeader,
+                                          "Content-Type": "application/json",
+                                        },
+                                        body: JSON.stringify({ id: selected.id, status: "closed" }),
+                                      });
+                                      if (res.status === 401) {
+                                        clearStoredAuth();
+                                        setAuthHeader(null);
+                                        setOrdersError("Credenciales inválidas o no configuradas.");
+                                        return;
+                                      }
+                                      if (!res.ok) {
+                                        setOrdersError("No se pudo actualizar el estado de la orden.");
+                                        return;
+                                      }
+                                      await loadOrders(authHeader);
+                                      setSelectedOrderId(selected.id);
+                                    }}
+                                  >
+                                    Cerrar orden
+                                  </button>
+                                ) : null}
+                              </div>
+
+                              <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+                                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Pago</div>
+                                <div className="mt-2">
+                                  <span className="font-semibold text-zinc-900">Método:</span>{" "}
+                                  {selected.payment?.methodName || "—"}
+                                </div>
+                                {selected.payment?.reference ? (
+                                  <div className="mt-1">
+                                    <span className="font-semibold text-zinc-900">Referencia:</span> {selected.payment.reference}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         </div>

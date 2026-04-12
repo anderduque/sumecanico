@@ -52,7 +52,7 @@ export default async function TiendaPage({
               <h1 className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
                 Repuestos con validación antes de comprar.
               </h1>
-              <p className="mt-5 max-w-3xl text-base leading-8 text-zinc-300 sm:text-lg">
+              <p className="mt-5 max-w-3xl text-justify text-base leading-8 text-zinc-300 sm:text-lg">
                 Agrega productos al carrito y luego confirmamos compatibilidad, disponibilidad y
                 precio final antes de cerrar el pedido. La tienda está pensada para ayudarte a
                 cotizar mejor, no para adivinar referencias.
@@ -149,7 +149,7 @@ export default async function TiendaPage({
                     </div>
                   </div>
 
-                  <p className="mt-5 flex-1 text-sm leading-8 text-zinc-300">{product.summary}</p>
+                  <p className="mt-5 flex-1 text-justify text-sm leading-8 text-zinc-300">{product.summary}</p>
 
                   <div className="mt-6 grid gap-3">
                     <Link

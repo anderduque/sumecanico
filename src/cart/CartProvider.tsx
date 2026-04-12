@@ -29,6 +29,7 @@ function clampQuantity(value: number) {
 }
 
 function mergeAdd(lines: CartLine[], productSlug: string, quantity: number) {
+  if (!productSlug.trim()) return lines;
   const idx = lines.findIndex((l) => l.productSlug === productSlug);
   if (idx === -1) return [...lines, { productSlug, quantity }];
   const next = [...lines];
@@ -52,6 +53,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         .filter(
           (x) =>
             typeof x?.productSlug === "string" &&
+            x.productSlug.trim().length > 0 &&
             typeof x?.quantity === "number" &&
             x.quantity > 0,
         )
@@ -68,15 +70,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [lines]);
 
   const add = useCallback((productSlug: string, quantity = 1) => {
+    if (!productSlug.trim()) return;
     const q = clampQuantity(quantity);
     setLines((prev) => mergeAdd(prev, productSlug, q));
   }, []);
 
   const remove = useCallback((productSlug: string) => {
+    if (!productSlug.trim()) return;
     setLines((prev) => prev.filter((l) => l.productSlug !== productSlug));
   }, []);
 
   const setQuantity = useCallback((productSlug: string, quantity: number) => {
+    if (!productSlug.trim()) return;
     const q = clampQuantity(quantity);
     setLines((prev) =>
       prev.map((l) => (l.productSlug === productSlug ? { ...l, quantity: q } : l)),
