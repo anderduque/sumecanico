@@ -1217,6 +1217,8 @@ export function AdminClient() {
 
             <form
               className="mt-8 grid gap-5"
+              autoComplete="off"
+              spellCheck={false}
               onSubmit={(e) => {
                 e.preventDefault();
                 void login();
@@ -1225,35 +1227,46 @@ export function AdminClient() {
               <div className="grid gap-2">
                 <label
                   htmlFor="user"
-                  className="text-xs font-semibold tracking-widest text-zinc-500"
+                  className="text-xs font-semibold tracking-[0.18em] text-zinc-500"
                 >
-                  EMAIL*
+                  Usuario
                 </label>
                 <input
                   id="user"
+                  name="admin-user"
                   value={user}
                   onChange={(e) => setUser(e.target.value)}
                   className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#1b4f7d] focus:ring-4 focus:ring-[#1b4f7d]/15"
                   placeholder="usuario@ejemplo.com"
-                  autoComplete="username"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  inputMode="email"
+                  enterKeyHint="next"
+                  spellCheck={false}
                 />
               </div>
 
               <div className="grid gap-2">
                 <label
                   htmlFor="password"
-                  className="text-xs font-semibold tracking-widest text-zinc-500"
+                  className="text-xs font-semibold tracking-[0.18em] text-zinc-500"
                 >
-                  CONTRASEÑA*
+                  Contraseña
                 </label>
                 <input
                   id="password"
+                  name="admin-passcode"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type="password"
                   className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#1b4f7d] focus:ring-4 focus:ring-[#1b4f7d]/15"
                   placeholder="••••••••"
-                  autoComplete="current-password"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  enterKeyHint="go"
+                  spellCheck={false}
                 />
               </div>
 
