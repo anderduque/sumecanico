@@ -19,5 +19,12 @@
     "details": "sumecanicoca6@gmail.com",
     "enabled": true,
     "sort": 30
+  },
+  {
+    "id": "paypal",
+    "name": "PayPal",
+    "details": "tests",
+    "enabled": true,
+    "sort": 40
   }
 ]

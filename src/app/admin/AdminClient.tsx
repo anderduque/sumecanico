@@ -1109,6 +1109,11 @@ export function AdminClient() {
     const ok = await load(header);
     await loadPaymentMethods(header);
     if (ok) {
+      setError(null);
+      setPassword("");
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       try {
         sessionStorage.setItem(sessionAuthKey, header);
         sessionStorage.setItem(sessionLastActiveKey, String(Date.now()));
@@ -1219,6 +1224,9 @@ export function AdminClient() {
               className="mt-8 grid gap-5"
               autoComplete="off"
               spellCheck={false}
+              data-1p-ignore="true"
+              data-lpignore="true"
+              data-bwignore="true"
               onSubmit={(e) => {
                 e.preventDefault();
                 void login();
@@ -1244,6 +1252,9 @@ export function AdminClient() {
                   inputMode="email"
                   enterKeyHint="next"
                   spellCheck={false}
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
                 />
               </div>
 
@@ -1262,11 +1273,14 @@ export function AdminClient() {
                   type="password"
                   className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#1b4f7d] focus:ring-4 focus:ring-[#1b4f7d]/15"
                   placeholder="••••••••"
-                  autoComplete="off"
+                  autoComplete="new-password"
                   autoCapitalize="none"
                   autoCorrect="off"
                   enterKeyHint="go"
                   spellCheck={false}
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
                 />
               </div>
 
