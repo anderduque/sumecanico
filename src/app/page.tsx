@@ -143,13 +143,13 @@ export default function Home() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <WhatsAppLink
                 message="Hola, quiero agendar una cita para revisar mi vehículo."
-                className="rounded-none bg-white px-7 py-3 text-sm font-semibold text-zinc-950 hover:bg-zinc-200"
+                className="rounded-[1rem] bg-white px-7 py-3 text-sm font-semibold text-zinc-950 hover:bg-zinc-200"
               >
                 Agenda tu cita
               </WhatsAppLink>
               <Link
                 href="/servicios"
-                className="inline-flex items-center justify-center border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
+                className="inline-flex items-center justify-center rounded-[1rem] border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
               >
                 Ver servicios
               </Link>
@@ -214,7 +214,10 @@ export default function Home() {
 
               <div className="mt-8 grid gap-4 border-t border-zinc-200 pt-8 sm:grid-cols-3">
                 {aboutStats.map((item) => (
-                  <div key={item.label}>
+                  <div
+                    key={item.label}
+                    className="rounded-[1.5rem] border border-zinc-200 bg-[#f8f5f1] px-5 py-5 shadow-[0_18px_40px_-32px_rgba(0,0,0,0.35)]"
+                  >
                     <div className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
                       {item.value}
                     </div>
@@ -226,7 +229,7 @@ export default function Home() {
               <div className="mt-8">
                 <Link
                   href="/contacto"
-                  className="inline-flex items-center justify-center border border-primary bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
+                  className="inline-flex items-center justify-center rounded-[1rem] border border-primary bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
                 >
                   Más información
                 </Link>
@@ -251,7 +254,7 @@ export default function Home() {
               href={whatsAppWaMeUrl("Hola, quiero cotizar un servicio/repuesto para mi vehículo.")}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center gap-3 border border-white bg-white px-6 py-3 text-sm font-semibold text-primary transition hover:bg-zinc-100"
+              className="inline-flex items-center justify-center gap-3 rounded-[1rem] border border-white bg-white px-6 py-3 text-sm font-semibold text-primary transition hover:bg-zinc-100"
             >
               <WhatsAppIcon className="h-5 w-5 text-primary" />
               <span>Cotizar ahora</span>
