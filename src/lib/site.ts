@@ -9,8 +9,8 @@ export const site = {
   cityLine: "Valencia, Carabobo",
   googleMapsUrl: "https://maps.app.goo.gl/RJBu484Hn3jEXCYC9",
   openingHours: [
-    { label: "Lunes a Viernes", value: "08:00 – 18:00" },
-    { label: "Sábado", value: "08:00 – 13:00" },
+    { label: "Lunes a Viernes", value: "8:30 am - 5:00 pm" },
+    { label: "Sabados", value: "9:00 am - 2:00 pm" },
   ],
 } as const;
 

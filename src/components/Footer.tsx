@@ -70,12 +70,18 @@ export function Footer() {
               </div>
 
               <a
-                className="text-zinc-500 hover:text-white"
+                className="group inline-flex items-center gap-2 text-zinc-500"
                 href="https://www.instagram.com/anderduque7/"
                 target="_blank"
                 rel="noreferrer"
               >
-                Plataforma Desarrollada por @anderduque7
+                <span>Plataforma desarrollada por</span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-zinc-200 transition group-hover:border-white/20 group-hover:bg-white/10">
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-amber-400 text-white">
+                    <InstagramIcon className="h-3 w-3" />
+                  </span>
+                  <span>@anderduque7</span>
+                </span>
               </a>
             </div>
           </div>
