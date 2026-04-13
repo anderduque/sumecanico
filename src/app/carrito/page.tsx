@@ -94,10 +94,20 @@ export default function CarritoPage() {
         </Container>
       </section>
 
-      <section className="bg-[#f6f3ef]">
-        <Container className="py-14 sm:py-16">
+      <section className="relative overflow-hidden bg-[#f6f3ef]">
+        <div className="absolute inset-0 opacity-15">
+          <Image
+            src="/home-engine-detail-optimized.jpg"
+            alt=""
+            fill
+            className="object-cover"
+            sizes="100vw"
+          />
+        </div>
+
+        <Container className="relative py-14 sm:py-16">
           {showEmpty ? (
-            <div className="border border-zinc-200 bg-white p-8">
+            <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-8 shadow-[0_20px_60px_-45px_rgba(0,0,0,0.2)]">
               <div className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
                 Carrito vacío
               </div>
@@ -111,7 +121,7 @@ export default function CarritoPage() {
               <div className="mt-6">
                 <Link
                   href="/tienda"
-                  className="inline-flex items-center justify-center border border-primary bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
+                  className="inline-flex items-center justify-center rounded-[1rem] border border-primary bg-primary px-5 py-3 text-sm font-semibold text-white shadow-[0_20px_50px_-30px_rgba(181,31,36,0.4)] transition hover:bg-[#981b1f]"
                 >
                   Ir a la tienda
                 </Link>
@@ -120,7 +130,7 @@ export default function CarritoPage() {
           ) : (
             <div className="grid gap-8 lg:grid-cols-12">
               <div className="lg:col-span-8">
-                <div className="border border-zinc-200 bg-white">
+                <div className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-[0_20px_60px_-45px_rgba(0,0,0,0.2)]">
                   <div className="border-b border-zinc-200 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">
                     Productos agregados
                   </div>
@@ -160,13 +170,13 @@ export default function CarritoPage() {
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
-                              className="h-10 w-10 border border-zinc-300 bg-white text-zinc-900 transition hover:bg-zinc-50"
+                              className="h-10 w-10 rounded-full border border-zinc-300 bg-white text-zinc-900 transition hover:bg-zinc-50"
                               onClick={() => setQuantity(line.product.slug, line.quantity - 1)}
                             >
                               −
                             </button>
                             <input
-                              className="h-10 w-16 border border-zinc-300 bg-white text-center text-sm text-zinc-900"
+                              className="h-10 w-16 rounded-full border border-zinc-300 bg-white text-center text-sm text-zinc-900"
                               inputMode="numeric"
                               pattern="[0-9]*"
                               value={line.quantity}
@@ -177,7 +187,7 @@ export default function CarritoPage() {
                             />
                             <button
                               type="button"
-                              className="h-10 w-10 border border-zinc-300 bg-white text-zinc-900 transition hover:bg-zinc-50"
+                              className="h-10 w-10 rounded-full border border-zinc-300 bg-white text-zinc-900 transition hover:bg-zinc-50"
                               onClick={() => setQuantity(line.product.slug, line.quantity + 1)}
                             >
                               +
@@ -197,7 +207,7 @@ export default function CarritoPage() {
               </div>
 
               <div className="lg:col-span-4">
-                <div className="border border-zinc-200 bg-white p-6">
+                <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-6 shadow-[0_20px_60px_-45px_rgba(0,0,0,0.2)]">
                   <div className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">
                     Resumen del pedido
                   </div>
@@ -214,14 +224,14 @@ export default function CarritoPage() {
 
                   <div className="mt-6 grid gap-3">
                     <Link
-                      className="inline-flex items-center justify-center border border-primary bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
+                      className="inline-flex items-center justify-center rounded-[1rem] border border-primary bg-primary px-4 py-3 text-sm font-semibold text-white shadow-[0_20px_50px_-30px_rgba(181,31,36,0.4)] transition hover:bg-[#981b1f]"
                       href="/checkout"
                     >
                       Continuar al checkout
                     </Link>
                     <button
                       type="button"
-                      className="border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50"
+                      className="rounded-[1rem] border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50"
                       onClick={() => clear()}
                     >
                       Vaciar carrito

@@ -28,7 +28,7 @@ export default async function TiendaPage({
     : products;
 
   return (
-    <div className="bg-[#121212] text-white">
+    <div className="bg-[#f6f3ef] text-white">
       <section className="relative isolate overflow-hidden border-b border-white/10">
         <div className="absolute inset-0">
           <Image
@@ -76,9 +76,15 @@ export default async function TiendaPage({
         </Container>
       </section>
 
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <Image src="/home-hero-mechanic-optimized.jpg" alt="" fill className="object-cover" sizes="100vw" />
+      <section className="relative overflow-hidden bg-[#f6f3ef]">
+        <div className="absolute inset-0 opacity-15">
+          <Image
+            src="/home-engine-detail-optimized.jpg"
+            alt=""
+            fill
+            className="object-cover"
+            sizes="100vw"
+          />
         </div>
 
         <Container className="relative py-12 sm:py-16">

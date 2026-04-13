@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function ServiciosPage() {
   return (
-    <div className="bg-[#121212] text-white">
+    <div className="bg-[#f6f3ef] text-white">
       <section className="relative isolate overflow-hidden border-b border-white/10">
         <div className="absolute inset-0">
           <Image
@@ -40,7 +40,7 @@ export default function ServiciosPage() {
         </Container>
       </section>
 
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden bg-[#f6f3ef]">
         <div className="absolute inset-0 opacity-15">
           <Image
             src="/home-engine-detail.png"

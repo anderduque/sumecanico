@@ -19,14 +19,6 @@ function MapPinIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
-      <path d="M21 16.2v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 1 3.3 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.7l.4 2.8a2 2 0 0 1-.6 1.8L6 9a16 16 0 0 0 9 9l1.7-1.8a2 2 0 0 1 1.8-.6l2.8.4A2 2 0 0 1 21 16.2z" />
-    </svg>
-  );
-}
-
 function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
@@ -39,7 +31,6 @@ function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function ContactoPage() {
   const mapsQuery = encodeURIComponent(`${site.addressLine}, ${site.cityLine}`);
   const googleEmbedUrl = `https://maps.google.com/maps?q=${mapsQuery}&t=m&z=16&output=embed`;
-  const appleMapsUrl = `https://maps.apple.com/?q=${mapsQuery}`;
 
   return (
     <div className="bg-white">
@@ -72,56 +63,52 @@ export default function ContactoPage() {
         </Container>
       </section>
 
-      <section className="border-b border-zinc-200 bg-white">
+      <section className="border-b border-zinc-200 bg-[#f6f3ef]">
         <Container className="py-14 sm:py-16">
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            <div className="border border-zinc-200 bg-zinc-50 p-6">
-              <MapPinIcon className="h-6 w-6 text-primary" />
-              <div className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">
-                Dirección
+          <div className="overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white/70 shadow-[0_20px_60px_-45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+            <div className="grid gap-0 md:grid-cols-2">
+              <div className="p-6 sm:p-7">
+                <MapPinIcon className="h-6 w-6 text-primary" />
+                <div className="mt-4 text-base font-bold uppercase tracking-[0.16em] text-zinc-950">
+                  Dirección
+                </div>
+                <div className="mt-3 text-sm leading-7 text-zinc-700">
+                  <div>{site.addressLine}</div>
+                  <div>{site.cityLine}</div>
+                </div>
               </div>
-              <div className="mt-3 text-sm leading-7 text-zinc-700">
-                <div>{site.addressLine}</div>
-                <div>{site.cityLine}</div>
-              </div>
-            </div>
 
-            <div className="border border-zinc-200 bg-zinc-50 p-6">
-              <PhoneIcon className="h-6 w-6 text-primary" />
-              <div className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">
-                WhatsApp
-              </div>
-              <div className="mt-3 text-sm leading-7 text-zinc-700">{site.whatsappPhoneE164}</div>
-            </div>
-
-            <div className="border border-zinc-200 bg-zinc-50 p-6">
-              <MailIcon className="h-6 w-6 text-primary" />
-              <div className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">
-                Email
-              </div>
-              <div className="mt-3 break-all text-sm leading-7 text-zinc-700">{site.email}</div>
-            </div>
-
-            <div className="border border-zinc-200 bg-zinc-50 p-6">
-              <ClockIcon className="h-6 w-6 text-primary" />
-              <div className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">
-                Horario
-              </div>
-              <div className="mt-3 space-y-3 text-sm leading-7 text-zinc-700">
-                {site.openingHours.map((h) => (
-                  <div key={h.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1">
-                    <span className="min-w-0">{h.label}</span>
-                    <span className="text-right font-medium text-zinc-950">{h.value}</span>
-                  </div>
-                ))}
+              <div className="border-t border-zinc-200/80 p-6 sm:p-7 md:border-l md:border-t-0">
+                <ClockIcon className="h-6 w-6 text-primary" />
+                <div className="mt-4 text-base font-bold uppercase tracking-[0.16em] text-zinc-950">
+                  Horario
+                </div>
+                <div className="mt-3 space-y-3 text-sm leading-7 text-zinc-700">
+                  {site.openingHours.map((h) => (
+                    <div key={h.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1">
+                      <span className="min-w-0">{h.label}</span>
+                      <span className="text-right font-medium text-zinc-950">{h.value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </Container>
       </section>
 
-      <section className="bg-[#f6f3ef]">
-        <Container className="py-14 sm:py-16">
+      <section className="relative overflow-hidden bg-[#f6f3ef]">
+        <div className="absolute inset-0 opacity-15">
+          <Image
+            src="/home-engine-detail-optimized.jpg"
+            alt=""
+            fill
+            className="object-cover"
+            sizes="100vw"
+          />
+        </div>
+
+        <Container className="relative py-14 sm:py-16">
           <div className="grid gap-8 lg:grid-cols-12">
             <div className="lg:col-span-5">
               <div className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
@@ -136,70 +123,61 @@ export default function ContactoPage() {
               </p>
             </div>
 
-            <div className="lg:col-span-7 grid gap-4 md:grid-cols-2">
+            <div className="lg:col-span-7 grid gap-5 md:grid-cols-2">
               <a
-                className="flex items-center gap-4 border border-zinc-200 bg-white p-5 transition hover:border-primary"
+                className="group flex items-center gap-4 overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white px-5 py-5 shadow-[0_20px_50px_-40px_rgba(0,0,0,0.25)] transition duration-300 hover:-translate-y-0.5 hover:border-green-500/40 hover:shadow-[0_24px_60px_-40px_rgba(22,163,74,0.28)]"
                 href={whatsAppWaMeUrl("Hola, necesito información.")}
                 target="_blank"
                 rel="noreferrer"
               >
-                <span className="grid h-12 w-12 place-items-center bg-green-600 text-white">
+                <span className="grid h-13 w-13 shrink-0 place-items-center rounded-2xl bg-green-600 text-white shadow-sm shadow-green-900/20 transition duration-300 group-hover:scale-[1.03]">
                   <WhatsAppIcon className="h-5 w-5" />
                 </span>
-                <span>
-                  <span className="block text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950">
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
                     WhatsApp
                   </span>
-                  <span className="mt-1 block text-sm text-zinc-600">Escribir ahora</span>
-                </span>
-              </a>
-
-              <a
-                className="flex items-center gap-4 border border-zinc-200 bg-white p-5 transition hover:border-primary"
-                href={site.googleMapsUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span className="grid h-12 w-12 place-items-center bg-primary text-white">
-                  <MapPinIcon className="h-5 w-5" />
-                </span>
-                <span>
-                  <span className="block text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950">
-                    Google Maps
+                  <span className="mt-2 block text-lg font-semibold tracking-tight text-zinc-950">
+                    Escribir ahora
                   </span>
-                  <span className="mt-1 block text-sm text-zinc-600">Abrir ubicación</span>
                 </span>
               </a>
 
               <a
-                className="flex items-center gap-4 border border-zinc-200 bg-white p-5 transition hover:border-primary"
+                className="group flex items-center gap-4 overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white px-5 py-5 shadow-[0_20px_50px_-40px_rgba(0,0,0,0.25)] transition duration-300 hover:-translate-y-0.5 hover:border-zinc-900/25 hover:shadow-[0_24px_60px_-40px_rgba(0,0,0,0.28)]"
                 href={`mailto:${site.email}`}
               >
-                <span className="grid h-12 w-12 place-items-center bg-zinc-950 text-white">
+                <span className="grid h-13 w-13 shrink-0 place-items-center rounded-2xl bg-zinc-950 text-white shadow-sm shadow-zinc-900/20 transition duration-300 group-hover:scale-[1.03]">
                   <MailIcon className="h-5 w-5" />
                 </span>
-                <span>
-                  <span className="block text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950">
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
                     Correo
                   </span>
-                  <span className="mt-1 block text-sm text-zinc-600">Enviar email</span>
+                  <span className="mt-2 block text-lg font-semibold tracking-tight text-zinc-950">
+                    Enviar email
+                  </span>
+                  <span className="mt-1 block truncate text-sm text-zinc-600">{site.email}</span>
                 </span>
               </a>
 
               <a
-                className="flex items-center gap-4 border border-zinc-200 bg-white p-5 transition hover:border-primary"
+                className="group flex items-center gap-4 overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white px-5 py-5 shadow-[0_20px_50px_-40px_rgba(0,0,0,0.25)] transition duration-300 hover:-translate-y-0.5 hover:border-pink-500/35 hover:shadow-[0_24px_60px_-40px_rgba(219,39,119,0.26)]"
                 href={site.instagramUrl}
                 target="_blank"
                 rel="noreferrer"
               >
-                <span className="grid h-12 w-12 place-items-center bg-pink-600 text-white">
+                <span className="grid h-13 w-13 shrink-0 place-items-center rounded-2xl bg-pink-600 text-white shadow-sm shadow-pink-900/20 transition duration-300 group-hover:scale-[1.03]">
                   <InstagramIcon className="h-5 w-5" />
                 </span>
-                <span>
-                  <span className="block text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950">
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
                     Instagram
                   </span>
-                  <span className="mt-1 block text-sm text-zinc-600">
+                  <span className="mt-2 block text-lg font-semibold tracking-tight text-zinc-950">
+                    Ver perfil
+                  </span>
+                  <span className="mt-1 block truncate text-sm text-zinc-600">
                     {"@" + (site.instagramUrl.replace(/\/+$/, "").split("/").pop() || "instagram")}
                   </span>
                 </span>
@@ -209,45 +187,63 @@ export default function ContactoPage() {
         </Container>
       </section>
 
-      <section className="border-t border-zinc-200 bg-white">
+      <section className="border-t border-zinc-200 bg-[#f6f3ef]">
         <Container className="py-14 sm:py-16">
-          <div className="grid gap-8 lg:grid-cols-12">
-            <div className="lg:col-span-5">
+          <div className="max-w-4xl">
+            <div>
               <div className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
                 Ubicación
               </div>
               <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-zinc-950 sm:text-4xl">
                 Encuéntranos en Valencia
               </h2>
+              <p className="mt-4 max-w-3xl text-justify text-base leading-8 text-zinc-600">
+                Visítanos en el taller o abre la ruta directamente desde tu aplicación de mapas.
+              </p>
             </div>
+          </div>
 
-            <div className="lg:col-span-7 overflow-hidden border border-zinc-200 bg-white">
-              <div className="relative aspect-[16/9] w-full">
-                <iframe
-                  title="Mapa de ubicación"
-                  src={googleEmbedUrl}
-                  className="h-full w-full"
-                  loading="eager"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
+          <div className="mt-8">
+            <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_80px_-50px_rgba(0,0,0,0.22)]">
+              <div className="grid gap-4 border-b border-zinc-200 px-6 py-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                    Taller Sumecánico
+                  </div>
+                  <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950">
+                    {site.addressLine}
+                  </div>
+                  <div className="mt-2 text-sm leading-7 text-zinc-600">{site.cityLine}</div>
+                </div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+                  Ruta disponible en Google Maps y Apple Maps
+                </div>
               </div>
-              <div className="flex flex-col gap-3 border-t border-zinc-200 p-4 sm:flex-row">
+
+              <div className="p-4 sm:p-5">
+                <div className="overflow-hidden rounded-[1.5rem] border border-zinc-200">
+                  <div className="relative aspect-[16/9] w-full bg-zinc-100">
+                    <iframe
+                      title="Mapa de ubicación"
+                      src={googleEmbedUrl}
+                      className="h-full w-full"
+                      loading="eager"
+                      allowFullScreen
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 border-t border-zinc-200 px-4 py-4 sm:px-5 sm:py-5">
                 <a
-                  className="inline-flex items-center justify-center border border-primary bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
+                  className="inline-flex items-center justify-center gap-3 rounded-[1rem] border border-primary bg-primary px-5 py-3.5 text-sm font-semibold text-white shadow-[0_20px_50px_-30px_rgba(181,31,36,0.45)] transition hover:bg-[#981b1f]"
                   href={site.googleMapsUrl}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Abrir en Google Maps
-                </a>
-                <a
-                  className="inline-flex items-center justify-center border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50"
-                  href={appleMapsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Abrir en Apple Maps
+                  <MapPinIcon className="h-4.5 w-4.5" />
+                  <span>Abrir en Google Maps</span>
                 </a>
               </div>
             </div>
