@@ -437,36 +437,9 @@ async function fileToOptimizedJpegDataUrl(file: File) {
 }
 
 export function AdminClient() {
-  const sessionAuthKey = "admin_auth_header";
-  const sessionLastActiveKey = "admin_last_active_at";
-  const idleTimeoutMs = 15 * 60 * 1000;
-
-  const [user, setUser] = useState(() => {
-    try {
-      if (typeof window === "undefined") return "";
-      return localStorage.getItem("admin_user") ?? "";
-    } catch {
-      return "";
-    }
-  });
+  const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
-  const [authHeader, setAuthHeader] = useState<string | null>(() => {
-    try {
-      if (typeof window === "undefined") return null;
-      const storedHeader = sessionStorage.getItem(sessionAuthKey);
-      if (!storedHeader) return null;
-      const last = Number(sessionStorage.getItem(sessionLastActiveKey));
-      if (!Number.isFinite(last) || Date.now() - last >= idleTimeoutMs) {
-        sessionStorage.removeItem(sessionAuthKey);
-        sessionStorage.removeItem(sessionLastActiveKey);
-        return null;
-      }
-      return storedHeader;
-    } catch {
-      return null;
-    }
-  });
-  const [rememberMe, setRememberMe] = useState(true);
+  const [authHeader, setAuthHeader] = useState<string | null>(null);
 
   const [state, setState] = useState<LoadState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -525,10 +498,6 @@ export function AdminClient() {
   }, [compatBodyStyle, compatBrand]);
 
   const logout = useCallback(() => {
-    try {
-      sessionStorage.removeItem(sessionAuthKey);
-      sessionStorage.removeItem(sessionLastActiveKey);
-    } catch {}
     setAuthHeader(null);
     setPassword("");
     setProducts([]);
@@ -568,16 +537,11 @@ export function AdminClient() {
   }, []);
 
   const clearStoredAuth = useCallback(() => {
-    try {
-      sessionStorage.removeItem(sessionAuthKey);
-      sessionStorage.removeItem(sessionLastActiveKey);
-    } catch {}
+    return;
   }, []);
 
   const bumpActivity = useCallback(() => {
-    try {
-      sessionStorage.setItem(sessionLastActiveKey, String(Date.now()));
-    } catch {}
+    return;
   }, []);
 
   function openNewPaymentMethodModal() {
@@ -859,40 +823,7 @@ export function AdminClient() {
     return () => {
       active = false;
     };
-  }, [authHeader, bumpActivity]);
-
-  useEffect(() => {
-    if (!authHeader) return;
-    let lastWrite = 0;
-    const onActivity = () => {
-      const now = Date.now();
-      if (now - lastWrite < 1000) return;
-      lastWrite = now;
-      bumpActivity();
-    };
-    bumpActivity();
-    const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "click", "scroll", "touchstart"];
-    for (const evt of events) window.addEventListener(evt, onActivity, { passive: true });
-    return () => {
-      for (const evt of events) window.removeEventListener(evt, onActivity);
-    };
-  }, [authHeader, bumpActivity]);
-
-  useEffect(() => {
-    if (!authHeader) return;
-    const intervalId = window.setInterval(() => {
-      let last = 0;
-      try {
-        last = Number(sessionStorage.getItem(sessionLastActiveKey));
-      } catch {}
-      if (!Number.isFinite(last) || !last) {
-        bumpActivity();
-        return;
-      }
-      if (Date.now() - last >= idleTimeoutMs) logout();
-    }, 5000);
-    return () => window.clearInterval(intervalId);
-  }, [authHeader, bumpActivity, idleTimeoutMs, logout]);
+  }, [authHeader]);
 
   function selectProduct(p: Product) {
     const normalizedInventory =
@@ -1099,11 +1030,6 @@ export function AdminClient() {
       return;
     }
 
-    try {
-      if (rememberMe) localStorage.setItem("admin_user", nextUser);
-      else localStorage.removeItem("admin_user");
-    } catch {}
-
     const header = toAuthHeader(nextUser, password);
     setAuthHeader(header);
     const ok = await load(header);
@@ -1114,10 +1040,6 @@ export function AdminClient() {
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
-      try {
-        sessionStorage.setItem(sessionAuthKey, header);
-        sessionStorage.setItem(sessionLastActiveKey, String(Date.now()));
-      } catch {}
     }
   }
 
@@ -1174,19 +1096,15 @@ export function AdminClient() {
         return;
       }
 
-      const nextAuth = toAuthHeader(nextUser, next.trim());
-      setAuthHeader(nextAuth);
-      try {
-        sessionStorage.setItem(sessionAuthKey, nextAuth);
-        sessionStorage.setItem(sessionLastActiveKey, String(Date.now()));
-      } catch {}
-
       setSecurityCurrentPassword("");
       setSecurityNextPassword("");
       setSecurityConfirmPassword("");
       setSecurityState("ready");
-      setSecuritySaved("Clave actualizada.");
-      window.setTimeout(() => setSecuritySaved(null), 3200);
+      setSecuritySaved("Clave actualizada. Inicia sesión de nuevo.");
+      window.setTimeout(() => {
+        logout();
+        window.location.reload();
+      }, 1200);
     } catch {
       setSecurityState("error");
       setSecurityError("No se pudo actualizar la clave.");
@@ -1283,16 +1201,6 @@ export function AdminClient() {
                   data-bwignore="true"
                 />
               </div>
-
-              <label className="flex items-center justify-center gap-2 text-sm font-semibold text-zinc-500">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-zinc-300 text-[#1b4f7d]"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                Recordarme
-              </label>
 
               {error ? (
                 <div className="border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
