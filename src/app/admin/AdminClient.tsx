@@ -351,34 +351,37 @@ function getPaymentIconUrl(method: PaymentMethod) {
   return null;
 }
 
-function getBankFromDetails(details: string) {
+function getBanksFromDetails(details: string): string[] {
   const lines = (details ?? "")
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);
-  const found = lines.find((l) => l.toLowerCase().startsWith("banco:"));
-  const bank = found?.slice("banco:".length).trim();
-  return bank || "";
+  const found = lines.find((l) => l.toLowerCase().startsWith("banco:") || l.toLowerCase().startsWith("bancos:"));
+  if (!found) return [];
+  const part = found.replace(/^bancos?:/i, "").trim();
+  return part.split(",").map((b) => b.trim()).filter(Boolean);
 }
 
-function setBankInDetails(details: string, bank: string) {
-  const nextBank = bank.trim();
+function setBanksInDetails(details: string, banks: string[]): string {
+  const nextBanks = banks.filter(Boolean).join(", ");
   const lines = (details ?? "").split("\n");
   const out: string[] = [];
   let replaced = false;
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) continue;
-    if (line.toLowerCase().startsWith("banco:")) {
+    if (line.toLowerCase().startsWith("banco:") || line.toLowerCase().startsWith("bancos:")) {
       if (!replaced) {
-        out.push(`Banco: ${nextBank}`);
+        out.push(banks.length > 1 ? `Bancos: ${nextBanks}` : `Banco: ${nextBanks}`);
         replaced = true;
       }
       continue;
     }
     out.push(raw);
   }
-  if (!replaced && nextBank) out.unshift(`Banco: ${nextBank}`);
+  if (!replaced && nextBanks) {
+    out.unshift(banks.length > 1 ? `Bancos: ${nextBanks}` : `Banco: ${nextBanks}`);
+  }
   return out.join("\n").trim();
 }
 
@@ -472,7 +475,7 @@ export function AdminClient() {
     enabled: true,
     sort: 10,
   });
-  const [paymentDraftBank, setPaymentDraftBank] = useState("");
+  const [paymentDraftBanks, setPaymentDraftBanks] = useState<string[]>([]);
   const [paymentDraftError, setPaymentDraftError] = useState<string | null>(null);
   const [securityCurrentPassword, setSecurityCurrentPassword] = useState("");
   const [securityNextPassword, setSecurityNextPassword] = useState("");
@@ -521,7 +524,7 @@ export function AdminClient() {
     setPaymentEditIndex(null);
     setSelectedPopularPaymentId("");
     setPaymentDraft({ id: "", name: "", details: "", enabled: true, sort: 10 });
-    setPaymentDraftBank("");
+    setPaymentDraftBanks([]);
     setPaymentDraftError(null);
     setSecurityCurrentPassword("");
     setSecurityNextPassword("");
@@ -551,7 +554,7 @@ export function AdminClient() {
     setPaymentModalMode("add");
     setPaymentEditIndex(null);
     setSelectedPopularPaymentId("");
-    setPaymentDraftBank("");
+    setPaymentDraftBanks([]);
     setShowPaymentModal(true);
   }
 
@@ -566,7 +569,7 @@ export function AdminClient() {
       sort: Number.isFinite(current.sort) ? Math.trunc(current.sort) : 0,
     });
     setSelectedPopularPaymentId("");
-    setPaymentDraftBank(getBankFromDetails(current.details ?? ""));
+    setPaymentDraftBanks(getBanksFromDetails(current.details ?? ""));
     setPaymentDraftError(null);
     setPaymentModalMode("edit");
     setPaymentEditIndex(idx);
@@ -589,9 +592,9 @@ export function AdminClient() {
 
     const draftKind = getPaymentIconKey({ ...paymentDraft, id: derivedId, name });
     if (draftKind === "pago-movil") {
-      const bank = paymentDraftBank.trim() || getBankFromDetails(paymentDraft.details ?? "");
-      if (!bank) {
-        setPaymentDraftError("Selecciona el banco (Pago móvil).");
+      const banks = paymentDraftBanks.length > 0 ? paymentDraftBanks : getBanksFromDetails(paymentDraft.details ?? "");
+      if (banks.length === 0) {
+        setPaymentDraftError("Selecciona al menos un banco (Pago móvil).");
         return;
       }
     }
@@ -612,7 +615,7 @@ export function AdminClient() {
                   name,
                   details:
                     draftKind === "pago-movil"
-                      ? setBankInDetails(paymentDraft.details ?? "", paymentDraftBank || getBankFromDetails(paymentDraft.details ?? ""))
+                      ? setBanksInDetails(paymentDraft.details ?? "", paymentDraftBanks.length > 0 ? paymentDraftBanks : getBanksFromDetails(paymentDraft.details ?? ""))
                       : (paymentDraft.details ?? ""),
                   enabled: !!paymentDraft.enabled,
                   sort: Number.isFinite(paymentDraft.sort) ? Math.trunc(paymentDraft.sort) : 0,
@@ -626,7 +629,7 @@ export function AdminClient() {
               name,
               details:
                 draftKind === "pago-movil"
-                  ? setBankInDetails(paymentDraft.details ?? "", paymentDraftBank || getBankFromDetails(paymentDraft.details ?? ""))
+                  ? setBanksInDetails(paymentDraft.details ?? "", paymentDraftBanks.length > 0 ? paymentDraftBanks : getBanksFromDetails(paymentDraft.details ?? ""))
                   : (paymentDraft.details ?? ""),
               enabled: !!paymentDraft.enabled,
               sort: Number.isFinite(paymentDraft.sort) ? Math.trunc(paymentDraft.sort) : 0,
@@ -1648,8 +1651,8 @@ export function AdminClient() {
 
                     {iconKey === "pago-movil" ? (
                       <div className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                        {getBankFromDetails(m.details ?? "")
-                          ? `Banco · ${getBankFromDetails(m.details ?? "")}`
+                        {getBanksFromDetails(m.details ?? "").length > 0
+                          ? `Bancos · ${getBanksFromDetails(m.details ?? "").join(", ")}`
                           : "Banco · Sin definir"}
                       </div>
                     ) : null}
@@ -2155,7 +2158,7 @@ export function AdminClient() {
                           const preset = popularPaymentPresets.find((x) => x.id === value);
                           if (!preset) return;
                           setPaymentDraft((p) => ({ ...p, name: preset.name, id: preset.id }));
-                          if (preset.id !== "pago-movil") setPaymentDraftBank("");
+                          if (preset.id !== "pago-movil") setPaymentDraftBanks([]);
                           setPaymentDraftError(null);
                         }}
                         className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
@@ -2203,24 +2206,28 @@ export function AdminClient() {
                 </div>
                 {getPaymentIconKey(paymentDraft) === "pago-movil" ? (
                   <div className="grid gap-2">
-                    <label className="text-sm font-semibold text-zinc-900">Banco*</label>
-                    <select
-                      value={paymentDraftBank}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setPaymentDraftBank(value);
-                        setPaymentDraft((p) => ({ ...p, details: setBankInDetails(p.details ?? "", value) }));
-                        setPaymentDraftError(null);
-                      }}
-                      className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                    >
-                      <option value="">Selecciona el banco</option>
+                    <label className="text-sm font-semibold text-zinc-900">Bancos*</label>
+                    <div className="max-h-48 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-2">
                       {venezuelaBanks.map((b) => (
-                        <option key={b} value={b}>
-                          {b}
-                        </option>
+                        <label key={b} className="flex items-center gap-2 px-2 py-1 hover:bg-zinc-50 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-zinc-300 text-primary"
+                            checked={paymentDraftBanks.includes(b)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              const nextBanks = checked
+                                ? [...paymentDraftBanks, b]
+                                : paymentDraftBanks.filter((x) => x !== b);
+                              setPaymentDraftBanks(nextBanks);
+                              setPaymentDraft((p) => ({ ...p, details: setBanksInDetails(p.details ?? "", nextBanks) }));
+                              setPaymentDraftError(null);
+                            }}
+                          />
+                          <span className="text-sm text-zinc-700">{b}</span>
+                        </label>
                       ))}
-                    </select>
+                    </div>
                   </div>
                 ) : null}
                 <div className="grid gap-2">
@@ -2230,7 +2237,7 @@ export function AdminClient() {
                     onChange={(e) => {
                       const value = e.target.value;
                       setPaymentDraft((p) => ({ ...p, details: value }));
-                      if (getPaymentIconKey(paymentDraft) === "pago-movil") setPaymentDraftBank(getBankFromDetails(value));
+                      if (getPaymentIconKey(paymentDraft) === "pago-movil") setPaymentDraftBanks(getBanksFromDetails(value));
                       setPaymentDraftError(null);
                     }}
                     className="min-h-[90px] w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
