@@ -206,17 +206,14 @@ export default function ContactoPage() {
           <div className="mt-8">
             <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_80px_-50px_rgba(0,0,0,0.22)]">
               <div className="grid gap-4 border-b border-zinc-200 px-6 py-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                <div className="text-center lg:text-center">
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                     Taller Sumecánico
                   </div>
                   <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950">
                     {site.addressLine}
                   </div>
                   <div className="mt-2 text-sm leading-7 text-zinc-600">{site.cityLine}</div>
-                </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-                  Ruta disponible en Google Maps y Apple Maps
                 </div>
               </div>
 

@@ -57,7 +57,7 @@ export default function ServiciosPage() {
               <article
                 key={service.slug}
                 className={[
-                  "group flex h-full flex-col overflow-hidden border bg-[#1b1b1b]/95 transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_30px_70px_-40px_rgba(0,0,0,0.8)]",
+                  "group flex h-full flex-col overflow-hidden rounded-[1.75rem] border bg-[#1b1b1b]/95 transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_30px_70px_-40px_rgba(0,0,0,0.8)]",
                   index === 0 ? "border-primary/70" : "border-white/10",
                 ].join(" ")}
               >
@@ -81,7 +81,7 @@ export default function ServiciosPage() {
                   <div className="mt-6">
                     <Link
                       href={`/servicios/${service.slug}`}
-                      className="inline-flex w-full items-center justify-center border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
+                      className="inline-flex w-full items-center justify-center rounded-[1rem] border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
                     >
                       Más información →
                     </Link>

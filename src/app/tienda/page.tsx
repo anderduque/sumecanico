@@ -11,11 +11,12 @@ export const metadata: Metadata = {
 };
 
 export const runtime = "nodejs";
+const pageSize = 20;
 
 export default async function TiendaPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string }>;
+  searchParams?: Promise<{ q?: string; page?: string }>;
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const products = await getProducts();
@@ -26,6 +27,20 @@ export default async function TiendaPage({
         return haystack.includes(q);
       })
     : products;
+  const requestedPage = Number.parseInt(resolvedSearchParams?.page ?? "1", 10);
+  const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+  const currentPage =
+    Number.isFinite(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, totalPages) : 1;
+  const startIndex = (currentPage - 1) * pageSize;
+  const visibleProducts = list.slice(startIndex, startIndex + pageSize);
+
+  function buildPageHref(page: number) {
+    const params = new URLSearchParams();
+    if (resolvedSearchParams?.q?.trim()) params.set("q", resolvedSearchParams.q.trim());
+    if (page > 1) params.set("page", String(page));
+    const query = params.toString();
+    return query ? `/tienda?${query}` : "/tienda";
+  }
 
   return (
     <div className="bg-[#f6f3ef] text-white">
@@ -58,9 +73,9 @@ export default async function TiendaPage({
               </p>
             </div>
 
-            <div className="lg:col-span-4">
-              <form className="w-full" action="/tienda" method="get">
-                <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.24em] text-zinc-400" htmlFor="q">
+            <div className="lg:col-span-4 lg:flex lg:justify-end">
+              <form className="w-full max-w-md" action="/tienda" method="get">
+                <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.24em] text-primary/85" htmlFor="q">
                   Buscar repuesto
                 </label>
                 <input
@@ -68,7 +83,7 @@ export default async function TiendaPage({
                   name="q"
                   defaultValue={resolvedSearchParams?.q ?? ""}
                   placeholder="Buscar por nombre, categoría o descripción"
-                  className="w-full border border-white/15 bg-white px-4 py-3 text-sm text-zinc-950 placeholder:text-zinc-500 outline-none transition focus:border-primary"
+                  className="w-full rounded-[1rem] border border-white/15 bg-white px-4 py-3 text-sm text-zinc-950 placeholder:text-zinc-500 outline-none transition focus:border-primary"
                 />
               </form>
             </div>
@@ -88,11 +103,54 @@ export default async function TiendaPage({
         </div>
 
         <Container className="relative py-12 sm:py-16">
+          {list.length > 0 ? (
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm font-medium text-zinc-700">
+                Mostrando <span className="font-semibold text-zinc-950">{startIndex + 1}</span> a{" "}
+                <span className="font-semibold text-zinc-950">
+                  {Math.min(startIndex + pageSize, list.length)}
+                </span>{" "}
+                de <span className="font-semibold text-zinc-950">{list.length}</span> repuestos
+              </div>
+              {totalPages > 1 ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href={buildPageHref(Math.max(1, currentPage - 1))}
+                    aria-disabled={currentPage === 1}
+                    className={[
+                      "inline-flex items-center justify-center rounded-[1rem] border px-4 py-2.5 text-sm font-semibold transition",
+                      currentPage === 1
+                        ? "pointer-events-none border-zinc-200 bg-white text-zinc-400"
+                        : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
+                    ].join(" ")}
+                  >
+                    Anterior
+                  </Link>
+                  <div className="rounded-[1rem] border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900">
+                    Página {currentPage} de {totalPages}
+                  </div>
+                  <Link
+                    href={buildPageHref(Math.min(totalPages, currentPage + 1))}
+                    aria-disabled={currentPage === totalPages}
+                    className={[
+                      "inline-flex items-center justify-center rounded-[1rem] border px-4 py-2.5 text-sm font-semibold transition",
+                      currentPage === totalPages
+                        ? "pointer-events-none border-zinc-200 bg-white text-zinc-400"
+                        : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
+                    ].join(" ")}
+                  >
+                    Siguiente
+                  </Link>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {list.map((product) => (
+            {visibleProducts.map((product) => (
               <article
                 key={product.slug}
-                className="group flex h-full flex-col overflow-hidden border border-white/10 bg-[#1a1a1a]/95 transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_30px_70px_-40px_rgba(0,0,0,0.8)]"
+                className="group flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#1a1a1a]/95 transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_30px_70px_-40px_rgba(0,0,0,0.8)]"
               >
                 <div className="relative aspect-[16/10] overflow-hidden bg-zinc-900">
                   {product.imageUrl ? (
@@ -160,11 +218,11 @@ export default async function TiendaPage({
                   <div className="mt-6 grid gap-3">
                     <Link
                       href={`/tienda/${encodeURIComponent(product.slug)}`}
-                      className="inline-flex w-full items-center justify-center border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:bg-zinc-100"
+                      className="inline-flex w-full items-center justify-center rounded-[1rem] border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
                     >
                       Ver detalles →
                     </Link>
-                    <AddToCartButton productSlug={product.slug} className="w-full" />
+                    <AddToCartButton productSlug={product.slug} className="w-full rounded-[1rem]" />
                   </div>
                 </div>
               </article>
@@ -174,6 +232,31 @@ export default async function TiendaPage({
           {list.length === 0 ? (
             <div className="mt-10 border border-white/10 bg-[#1a1a1a] p-6 text-sm text-zinc-300">
               No se encontraron productos con “{resolvedSearchParams?.q}”.
+            </div>
+          ) : null}
+
+          {totalPages > 1 ? (
+            <div className="mt-10 flex justify-center">
+              <div className="flex flex-wrap items-center gap-2">
+                {Array.from({ length: totalPages }).map((_, index) => {
+                  const page = index + 1;
+                  const active = page === currentPage;
+                  return (
+                    <Link
+                      key={page}
+                      href={buildPageHref(page)}
+                      className={[
+                        "inline-flex h-11 min-w-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition",
+                        active
+                          ? "border-primary bg-primary text-white"
+                          : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
+                      ].join(" ")}
+                    >
+                      {page}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           ) : null}
         </Container>
