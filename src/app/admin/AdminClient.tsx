@@ -464,6 +464,7 @@ export function AdminClient() {
   const [, setPaymentsState] = useState<LoadState>("idle");
   const [paymentsError, setPaymentsError] = useState<string | null>(null);
   const [paymentsSaved, setPaymentsSaved] = useState(false);
+  const [paymentsBusyText, setPaymentsBusyText] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentModalMode, setPaymentModalMode] = useState<"add" | "edit">("add");
   const [paymentEditIndex, setPaymentEditIndex] = useState<number | null>(null);
@@ -680,10 +681,10 @@ export function AdminClient() {
         setPaymentsError("No se pudieron guardar los métodos de pago.");
         return;
       }
-      await loadPaymentMethods(authHeader);
-      setPaymentsSaved(true);
       setSavedNotice(successMessage);
       window.setTimeout(() => setSavedNotice(null), 3200);
+      await loadPaymentMethods(authHeader);
+      setPaymentsSaved(true);
     } catch {
       setPaymentsState("error");
       setPaymentsError("No se pudieron guardar los métodos de pago.");
@@ -1561,6 +1562,11 @@ export function AdminClient() {
           </div>
 
           <div className="px-6 py-6">
+            {paymentsBusyText ? (
+              <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm font-semibold text-blue-900">
+                {paymentsBusyText}
+              </div>
+            ) : null}
             {paymentsError ? (
               <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
                 {paymentsError}
@@ -1616,16 +1622,37 @@ export function AdminClient() {
                           ) : (
                             <svg
                               viewBox="0 0 24 24"
-                              className="h-5 w-5 text-zinc-600"
-                              fill="currentColor"
+                              className="h-5 w-5"
                               aria-hidden="true"
                             >
                               {iconKey === "zinli" ? (
-                                <path d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v9A3.5 3.5 0 0 1 16.5 20h-9A3.5 3.5 0 0 1 4 16.5v-9Zm3.5-1.5A1.5 1.5 0 0 0 6 7.5V9h12V7.5A1.5 1.5 0 0 0 16.5 6h-9ZM6 11v5.5A1.5 1.5 0 0 0 7.5 18h9a1.5 1.5 0 0 0 1.5-1.5V11H6Z" />
+                                <>
+                                  <rect x="2.5" y="2.5" width="19" height="19" rx="4" fill="#5B3BB7" />
+                                  <rect x="11" y="4.8" width="2" height="5.2" rx="1" fill="#2ED3B7" />
+                                  <rect x="11" y="4.8" width="2" height="5.2" rx="1" fill="#2ED3B7" transform="rotate(45 12 12)" />
+                                  <rect x="11" y="4.8" width="2" height="5.2" rx="1" fill="#2ED3B7" transform="rotate(90 12 12)" />
+                                  <rect x="11" y="4.8" width="2" height="5.2" rx="1" fill="#2ED3B7" transform="rotate(135 12 12)" />
+                                  <rect x="11" y="4.8" width="2" height="5.2" rx="1" fill="#2ED3B7" transform="rotate(180 12 12)" />
+                                  <rect x="11" y="4.8" width="2" height="5.2" rx="1" fill="#2ED3B7" transform="rotate(225 12 12)" />
+                                  <rect x="11" y="4.8" width="2" height="5.2" rx="1" fill="#2ED3B7" transform="rotate(270 12 12)" />
+                                  <rect x="11" y="4.8" width="2" height="5.2" rx="1" fill="#2ED3B7" transform="rotate(315 12 12)" />
+                                </>
                               ) : iconKey === "pago-movil" ? (
-                                <path d="M8 2.5A2.5 2.5 0 0 0 5.5 5v14A2.5 2.5 0 0 0 8 21.5h8A2.5 2.5 0 0 0 18.5 19V5A2.5 2.5 0 0 0 16 2.5H8Zm0 2h8A.5.5 0 0 1 16.5 5v14a.5.5 0 0 1-.5.5H8a.5.5 0 0 1-.5-.5V5A.5.5 0 0 1 8 4.5Zm3 14.5a1 1 0 1 0 2 0 1 1 0 0 0-2 0Z" />
+                                <>
+                                  <rect x="14" y="6.6" width="7.6" height="2.6" rx="1.3" fill="#F5B000" />
+                                  <rect x="14" y="10.7" width="7.6" height="2.6" rx="1.3" fill="#F5B000" />
+                                  <rect x="14" y="14.8" width="7.6" height="2.6" rx="1.3" fill="#F5B000" />
+                                  <path
+                                    d="M3.3 6.6h6.2c1.9 0 3.4 1.5 3.4 3.3S11.4 13.2 9.5 13.2H6.2v4.2H3.3V6.6Zm2.9 2.4v2h3.2c.6 0 1.1-.4 1.1-1s-.5-1-1.1-1H6.2Z"
+                                    fill="#111111"
+                                  />
+                                </>
                               ) : (
-                                <path d="M12 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm-1 12h2v6h-2v-6Z" />
+                                <path
+                                  d="M12 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm-1 12h2v6h-2v-6Z"
+                                  fill="currentColor"
+                                  className="text-zinc-600"
+                                />
                               )}
                             </svg>
                           )}
@@ -1677,10 +1704,15 @@ export function AdminClient() {
                         type="button"
                         className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-900 hover:bg-rose-100"
                         onClick={async () => {
-                          const nextMethods = paymentMethods.filter((_, i) => i !== idx);
-                          setPaymentMethods(nextMethods);
-                          setPaymentsSaved(false);
-                          await savePaymentMethods(nextMethods, "Método eliminado.");
+                          setPaymentsBusyText("Eliminando método...");
+                          try {
+                            const nextMethods = paymentMethods.filter((_, i) => i !== idx);
+                            setPaymentMethods(nextMethods);
+                            setPaymentsSaved(false);
+                            await savePaymentMethods(nextMethods, "Método eliminado correctamente.");
+                          } finally {
+                            setPaymentsBusyText(null);
+                          }
                         }}
                       >
                         Eliminar
