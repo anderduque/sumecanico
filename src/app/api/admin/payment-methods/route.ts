@@ -6,10 +6,7 @@ import { getPaymentMethods, savePaymentMethods } from "@/lib/paymentMethodsStore
 export const runtime = "nodejs";
 
 function unauthorized() {
-  return new NextResponse("Unauthorized", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="Admin"' },
-  });
+  return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 }
 
 function isPaymentMethodPayload(x: unknown): x is PaymentMethod {

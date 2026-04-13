@@ -5,10 +5,7 @@ import { getOrders, updateOrder } from "@/lib/ordersStore";
 export const runtime = "nodejs";
 
 function unauthorized() {
-  return new NextResponse("Unauthorized", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="Admin"' },
-  });
+  return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 }
 
 export async function GET(request: Request) {
@@ -45,4 +42,3 @@ export async function PUT(request: Request) {
   if (!ok) return NextResponse.json({ error: "not_found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }
-
