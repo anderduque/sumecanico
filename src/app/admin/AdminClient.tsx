@@ -1244,22 +1244,22 @@ export function AdminClient() {
                 priority
               />
             </div>
-            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
+            <div className="hidden text-xs font-semibold uppercase tracking-[0.24em] text-white/60 sm:block">
               Módulo interno
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <button
               type="button"
-              className="border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-white/10"
+              className="whitespace-nowrap border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-white/10 sm:px-4 sm:text-sm"
               onClick={() => setTab("security")}
             >
               Contraseña
             </button>
             <button
               type="button"
-              className="border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-white/10"
+              className="whitespace-nowrap border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-white/10 sm:px-4 sm:text-sm"
               onClick={logout}
             >
               Cerrar sesión
