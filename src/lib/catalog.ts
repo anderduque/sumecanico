@@ -261,6 +261,55 @@ export const services: Service[] = [
       },
     ],
   },
+  {
+    slug: "latoneria-pintura",
+    name: "Latonería y pintura",
+    summary: "Corrección estética, reparación de golpes y acabado profesional.",
+    imageUrl: "/service-latoneria-pintura.png",
+    intro:
+      "Recuperamos la apariencia del vehículo con trabajos de latonería, preparación de superficies y pintura orientados a corregir golpes, rayones, abolladuras y desgaste visible.",
+    whyItMatters:
+      "Una buena reparación estética no solo mejora la presentación del vehículo; también ayuda a proteger la carrocería frente a corrosión, deterioro prematuro y pérdida de valor por daños mal resueltos.",
+    details: [
+      "Corrección de golpes, abolladuras y rayones",
+      "Preparación de superficie, masillado y nivelación",
+      "Aplicación de pintura y acabado según el daño",
+    ],
+    process: [
+      "Inspección visual del daño, panel comprometido y nivel de corrección requerido",
+      "Desarme parcial y trabajo de latonería para recuperar forma y alineación",
+      "Preparación de la superficie con lijado, fondo y ajuste de imperfecciones",
+      "Aplicación de pintura, secado, revisión final y entrega estética del área intervenida",
+    ],
+    includes: [
+      "Evaluación del daño y alcance del trabajo",
+      "Corrección de lámina en áreas afectadas",
+      "Preparación técnica previa a pintura",
+      "Acabado final con revisión visual",
+    ],
+    benefits: [
+      "Mejora la imagen general del vehículo",
+      "Protege la carrocería contra corrosión y desgaste",
+      "Ayuda a conservar valor estético y comercial",
+    ],
+    faqs: [
+      {
+        question: "¿Se puede reparar un golpe sin pintar toda la pieza?",
+        answer:
+          "Depende del tipo de daño, la profundidad y la zona afectada. Primero evaluamos si conviene una corrección localizada o un trabajo más completo para que el acabado quede uniforme.",
+      },
+      {
+        question: "¿Trabajan rayones y detalles estéticos menores?",
+        answer:
+          "Sí. Atendemos desde rayones, abolladuras leves y desgaste visible hasta correcciones más amplias de latonería y pintura.",
+      },
+      {
+        question: "¿Cuánto tarda un trabajo de latonería y pintura?",
+        answer:
+          "El tiempo varía según la magnitud del daño, el número de piezas involucradas y el proceso de preparación. Tras la inspección te indicamos un tiempo estimado realista.",
+      },
+    ],
+  },
 ];
 
 export function getServiceBySlug(slug: string) {
