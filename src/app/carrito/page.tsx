@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/cart/CartProvider";
+import type { CartProductSnapshot } from "@/cart/cartTypes";
 import { Container } from "@/components/Container";
 import { formatMoney } from "@/lib/money";
 import type { Product } from "@/lib/productTypes";
@@ -11,6 +12,7 @@ import type { Product } from "@/lib/productTypes";
 export default function CarritoPage() {
   const { lines, totalItems, remove, setQuantity, clear } = useCart();
   const [productsBySlug, setProductsBySlug] = useState<Record<string, Product>>({});
+  const [catalogReady, setCatalogReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -24,10 +26,12 @@ export default function CarritoPage() {
           if (p && typeof p.slug === "string") map[p.slug] = p;
         }
         setProductsBySlug(map);
+        setCatalogReady(true);
       })
       .catch(() => {
         if (cancelled) return;
         setProductsBySlug({});
+        setCatalogReady(true);
       });
     return () => {
       cancelled = true;
@@ -35,27 +39,27 @@ export default function CarritoPage() {
   }, []);
 
   useEffect(() => {
-    if (Object.keys(productsBySlug).length === 0) return;
+    if (!catalogReady || Object.keys(productsBySlug).length === 0) return;
     const invalid = lines.filter((l) => !productsBySlug[l.productSlug]);
     if (invalid.length === 0) return;
     for (const line of invalid) remove(line.productSlug);
-  }, [lines, productsBySlug, remove]);
+  }, [catalogReady, lines, productsBySlug, remove]);
 
   const enriched = useMemo(() => {
     return lines
       .map((l) => {
-        const product = productsBySlug[l.productSlug];
+        const product = productsBySlug[l.productSlug] ?? l.product;
         if (!product) return null;
         return { product, quantity: l.quantity };
       })
-      .filter((x) => x !== null);
+      .filter((x): x is { product: Product | CartProductSnapshot; quantity: number } => x !== null);
   }, [lines, productsBySlug]);
 
   const total = useMemo(() => {
     return enriched.reduce((sum, line) => sum + line.product.priceCents * line.quantity, 0);
   }, [enriched]);
 
-  const showEmpty = totalItems === 0 || (Object.keys(productsBySlug).length > 0 && enriched.length === 0);
+  const showEmpty = totalItems === 0 || (catalogReady && lines.length > 0 && enriched.length === 0);
 
   return (
     <div className="bg-white">
@@ -134,7 +138,7 @@ export default function CarritoPage() {
                   <div className="border-b border-zinc-200 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">
                     Productos agregados
                   </div>
-                  {Object.keys(productsBySlug).length === 0 ? (
+                  {!catalogReady && enriched.length === 0 ? (
                     <div className="px-6 py-4 text-sm text-zinc-600">Cargando precios...</div>
                   ) : null}
                   <div className="divide-y divide-zinc-200">

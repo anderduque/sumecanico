@@ -8,12 +8,12 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { CartLine } from "@/cart/cartTypes";
+import type { CartLine, CartProductSnapshot } from "@/cart/cartTypes";
 
 type CartContextValue = {
   lines: CartLine[];
   totalItems: number;
-  add: (productSlug: string, quantity?: number) => void;
+  add: (productSlug: string, quantity?: number, product?: CartProductSnapshot) => void;
   remove: (productSlug: string) => void;
   setQuantity: (productSlug: string, quantity: number) => void;
   clear: () => void;
@@ -28,14 +28,20 @@ function clampQuantity(value: number) {
   return Math.max(1, Math.min(99, Math.trunc(value)));
 }
 
-function mergeAdd(lines: CartLine[], productSlug: string, quantity: number) {
+function mergeAdd(
+  lines: CartLine[],
+  productSlug: string,
+  quantity: number,
+  product?: CartProductSnapshot,
+) {
   if (!productSlug.trim()) return lines;
   const idx = lines.findIndex((l) => l.productSlug === productSlug);
-  if (idx === -1) return [...lines, { productSlug, quantity }];
+  if (idx === -1) return [...lines, { productSlug, quantity, product }];
   const next = [...lines];
   next[idx] = {
     productSlug,
     quantity: clampQuantity(next[idx].quantity + quantity),
+    product: product ?? next[idx].product,
   };
   return next;
 }
@@ -57,7 +63,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             typeof x?.quantity === "number" &&
             x.quantity > 0,
         )
-        .map((x) => ({ productSlug: x.productSlug, quantity: clampQuantity(x.quantity) }));
+        .map((x) => ({
+          productSlug: x.productSlug,
+          quantity: clampQuantity(x.quantity),
+          product: x.product,
+        }));
       return normalized;
     } catch {
       return [];
@@ -69,10 +79,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(storageKey, JSON.stringify(lines));
   }, [lines]);
 
-  const add = useCallback((productSlug: string, quantity = 1) => {
+  const add = useCallback((productSlug: string, quantity = 1, product?: CartProductSnapshot) => {
     if (!productSlug.trim()) return;
     const q = clampQuantity(quantity);
-    setLines((prev) => mergeAdd(prev, productSlug, q));
+    setLines((prev) => mergeAdd(prev, productSlug, q, product));
   }, []);
 
   const remove = useCallback((productSlug: string) => {

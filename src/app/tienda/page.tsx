@@ -222,7 +222,11 @@ export default async function TiendaPage({
                     >
                       Ver detalles →
                     </Link>
-                    <AddToCartButton productSlug={product.slug} className="w-full rounded-[1rem]" />
+                    <AddToCartButton
+                      productSlug={product.slug}
+                      product={product}
+                      className="w-full rounded-[1rem]"
+                    />
                   </div>
                 </div>
               </article>

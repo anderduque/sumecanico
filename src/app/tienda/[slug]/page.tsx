@@ -213,7 +213,7 @@ export default async function ProductoPage({
                     y disponibilidad real antes de procesar la reserva.
                   </p>
 
-                  <ProductDetailActions productSlug={product.slug} productName={product.name} />
+                  <ProductDetailActions product={product} />
 
                   <div className="mt-6 grid gap-3 border-t border-zinc-200 pt-6">
                     <div className="flex items-start gap-3">
