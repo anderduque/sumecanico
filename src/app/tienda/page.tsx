@@ -329,15 +329,15 @@ export default async function TiendaPage({
                       </div>
                     </div>
 
-                    <div className={["grid", isConsultOnly ? "mt-5 gap-2" : "mt-6 gap-3"].join(" ")}>
+                    <div className={["mt-auto grid", isConsultOnly ? "pt-5 gap-2" : "pt-6 gap-3"].join(" ")}>
                       {isConsultOnly ? (
-                        <div className="rounded-[0.95rem] border border-amber-300/25 bg-amber-300/10 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.14em] text-amber-200">
+                        <div className="inline-flex min-h-[50px] items-center justify-center rounded-[1rem] border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-center text-sm font-semibold uppercase tracking-[0.14em] text-amber-200">
                           Consultar disponibilidad
                         </div>
                       ) : null}
                       <Link
                         href={`/tienda/${encodeURIComponent(product.slug)}`}
-                        className="inline-flex w-full items-center justify-center rounded-[1rem] border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
+                        className="inline-flex min-h-[50px] w-full items-center justify-center rounded-[1rem] border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
                       >
                         Ver detalles →
                       </Link>
@@ -345,7 +345,7 @@ export default async function TiendaPage({
                         <AddToCartButton
                           productSlug={product.slug}
                           product={product}
-                          className="w-full rounded-[1rem]"
+                          className="min-h-[50px] w-full rounded-[1rem] py-3"
                         />
                       ) : null}
                     </div>
