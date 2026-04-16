@@ -6,6 +6,7 @@ export type Product = {
   shockPosition?: "delantero" | "trasero";
   sku?: string;
   shockBrand?:
+    | "GREBIS"
     | "GREKIS"
     | "NOR"
     | "OKAMI"

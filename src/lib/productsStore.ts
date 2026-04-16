@@ -20,7 +20,7 @@ function isProduct(x: unknown): x is Product {
   if (p.sku !== undefined && typeof p.sku !== "string") return false;
   if (
     p.shockBrand !== undefined &&
-    !["GREKIS", "NOR", "OKAMI", "TOKICO", "GABRIEL", "MONROE", "OLDMAN EMU", "MASTER KING", "CIC", "TOYOTA ORIGINAL"].includes(
+    !["GREKIS", "GREBIS", "NOR", "OKAMI", "TOKICO", "GABRIEL", "MONROE", "OLDMAN EMU", "MASTER KING", "CIC", "TOYOTA ORIGINAL"].includes(
       p.shockBrand,
     )
   ) {
@@ -102,6 +102,7 @@ async function getProductsUncached(): Promise<Product[]> {
     const list: Product[] = snap.docs
       .map((d: { data: () => unknown }) => d.data())
       .filter(isProduct)
+      .map(normalizeProduct)
       .sort((a: Product, b: Product) => a.name.localeCompare(b.name));
     return list;
   }
@@ -109,12 +110,14 @@ async function getProductsUncached(): Promise<Product[]> {
   const raw = await readFile(productsFilePath, "utf8");
   const parsed = JSON.parse(raw) as unknown;
   if (!Array.isArray(parsed)) return [];
-  const list = parsed.filter(isProduct);
+  const list = parsed.filter(isProduct).map(normalizeProduct);
   return list;
 }
 
 function normalizeProduct(product: Product): Product {
   const imageUrls = getProductImageUrls(product);
+  const normalizedShockBrand =
+    product.shockBrand === "GREBIS" ? "GREKIS" : product.shockBrand;
   return {
     ...product,
     slug: product.slug.trim(),
@@ -123,7 +126,7 @@ function normalizeProduct(product: Product): Product {
     shockPosition:
       product.category.trim() === "Amortiguadores" ? product.shockPosition : undefined,
     sku: product.category.trim() === "Amortiguadores" ? product.sku?.trim() || undefined : undefined,
-    shockBrand: product.category.trim() === "Amortiguadores" ? product.shockBrand : undefined,
+    shockBrand: product.category.trim() === "Amortiguadores" ? normalizedShockBrand : undefined,
     pricingMode: product.pricingMode === "check_availability" ? "check_availability" : "fixed",
     currency: product.currency.trim().toUpperCase(),
     imageUrl: getProductCoverImage({ imageUrl: product.imageUrl, imageUrls }),
@@ -150,7 +153,7 @@ async function getProductBySlugUncached(slug: string): Promise<Product | undefin
     const byId = await db.collection("products").doc(slug).get();
     if (byId.exists) {
       const data = byId.data() as unknown;
-      return isProduct(data) ? data : undefined;
+      return isProduct(data) ? normalizeProduct(data) : undefined;
     }
 
     const snap = await db
@@ -159,7 +162,7 @@ async function getProductBySlugUncached(slug: string): Promise<Product | undefin
       .limit(1)
       .get();
     const found = snap.docs[0]?.data() as unknown;
-    return isProduct(found) ? found : undefined;
+    return isProduct(found) ? normalizeProduct(found) : undefined;
   }
 
   const list = await getProducts();
