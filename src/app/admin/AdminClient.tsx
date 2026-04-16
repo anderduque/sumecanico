@@ -157,7 +157,7 @@ const productCategoryOptions = [
 ] as const;
 
 const shockBrandOptions = [
-  "GREBIS",
+  "GREKIS",
   "NOR",
   "OKAMI",
   "TOKICO",
@@ -1557,7 +1557,7 @@ export function AdminClient() {
                 <div>
                   Cargando repuestos...
                   <span className="ml-2 font-medium text-amber-800/80">
-                    El sistema est&aacute; trayendo la informaci&oacute;n del cat&aacute;logo.
+                    El sistema está trayendo la información del catálogo.
                   </span>
                 </div>
               </div>
@@ -2456,46 +2456,44 @@ export function AdminClient() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/50"
-            onClick={() => setShowPanel(false)}
+            onClick={() => {
+              if (state === "loading") return;
+              setShowPanel(false);
+            }}
             aria-hidden="true"
           />
           <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl lg:max-w-2xl">
+            {state === "loading" ? (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/78 backdrop-blur-[2px]">
+                <div className="mx-4 w-full max-w-sm rounded-2xl border border-zinc-200 bg-white px-6 py-7 text-center shadow-[0_25px_80px_-35px_rgba(0,0,0,0.35)]">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                    <SpinnerIcon className="h-7 w-7 animate-spin" />
+                  </div>
+                  <div className="mt-4 text-lg font-semibold text-zinc-950">
+                    {isEditingExisting ? "Guardando cambios" : "Guardando repuesto"}
+                  </div>
+                  <div className="mt-2 text-sm leading-6 text-zinc-600">
+                    {isEditingExisting
+                      ? "Estamos actualizando la información del repuesto."
+                      : "Estamos procesando y guardando el nuevo repuesto."}
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
               <div className="text-sm font-semibold text-zinc-950">
-                {state === "loading"
-                  ? isEditingExisting
-                    ? "Guardando cambios"
-                    : "Guardando repuesto"
-                  : isEditingExisting
-                    ? "Editar repuesto"
-                    : "Crear repuesto"}
+                {isEditingExisting ? "Editar repuesto" : "Crear repuesto"}
               </div>
               <button
                 type="button"
-                className="rounded-md border border-zinc-200 px-2 py-1 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                className="rounded-md border border-zinc-200 px-2 py-1 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => setShowPanel(false)}
+                disabled={state === "loading"}
               >
                 Cerrar
               </button>
             </div>
             <div className="relative flex-1 overflow-y-auto p-5">
-                  {state === "loading" ? (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/78 backdrop-blur-[2px]">
-                      <div className="mx-4 w-full max-w-sm rounded-2xl border border-zinc-200 bg-white px-6 py-7 text-center shadow-[0_25px_80px_-35px_rgba(0,0,0,0.35)]">
-                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
-                          <SpinnerIcon className="h-7 w-7 animate-spin" />
-                        </div>
-                        <div className="mt-4 text-lg font-semibold text-zinc-950">
-                          {isEditingExisting ? "Guardando cambios" : "Guardando repuesto"}
-                        </div>
-                        <div className="mt-2 text-sm leading-6 text-zinc-600">
-                          {isEditingExisting
-                            ? "Estamos actualizando la informaci&oacute;n del repuesto."
-                            : "Estamos procesando y guardando el nuevo repuesto."}
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
                   <div className="grid gap-3">
                     <div className="grid gap-2">
                       <label className="text-sm font-semibold text-zinc-900" htmlFor="name">

@@ -20,7 +20,7 @@ function isProduct(x: unknown): x is Product {
   if (p.sku !== undefined && typeof p.sku !== "string") return false;
   if (
     p.shockBrand !== undefined &&
-    !["GREBIS", "NOR", "OKAMI", "TOKICO", "GABRIEL", "MONROE", "OLDMAN EMU", "MASTER KING", "CIC", "TOYOTA ORIGINAL"].includes(
+    !["GREKIS", "NOR", "OKAMI", "TOKICO", "GABRIEL", "MONROE", "OLDMAN EMU", "MASTER KING", "CIC", "TOYOTA ORIGINAL"].includes(
       p.shockBrand,
     )
   ) {
