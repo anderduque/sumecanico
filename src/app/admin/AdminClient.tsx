@@ -1691,20 +1691,14 @@ export function AdminClient() {
                           </div>
                         </div>
 
-                        <div className="shrink-0 text-right">
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                            {p.pricingMode === "check_availability" ? "Estado" : "Precio"}
-                          </div>
-                          {p.pricingMode === "check_availability" ? (
-                            <div className="mt-1 max-w-[10rem] text-right text-sm font-semibold uppercase leading-5 tracking-[0.08em] text-amber-700">
-                              Consultar disponibilidad
-                            </div>
-                          ) : (
+                        {p.pricingMode !== "check_availability" ? (
+                          <div className="shrink-0 text-right">
+                            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Precio</div>
                             <div className="mt-1 text-lg font-semibold text-zinc-950">
                               {formatMoney(p.priceCents, { currency: p.currency })}
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
@@ -1729,16 +1723,23 @@ export function AdminClient() {
                       </div>
                     </div>
 
-                    <div className="mt-5 flex items-center justify-between border-t border-zinc-200 pt-4 text-sm">
-                      <div className="text-zinc-600">
-                        Inventario:{" "}
-                        <span className="font-semibold text-zinc-950">
-                          {typeof p.inventoryQty === "number" ? p.inventoryQty : "—"}
+                    <div className="mt-5 border-t border-zinc-200 pt-4 text-sm">
+                      {p.pricingMode === "check_availability" ? (
+                        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.14em] text-amber-800">
+                          Consultar disponibilidad
+                        </div>
+                      ) : null}
+                      <div className="flex items-center justify-between">
+                        <div className="text-zinc-600">
+                          Inventario:{" "}
+                          <span className="font-semibold text-zinc-950">
+                            {typeof p.inventoryQty === "number" ? p.inventoryQty : "—"}
+                          </span>
+                        </div>
+                        <span className="font-semibold text-primary transition group-hover:text-[#981b1f]">
+                          Editar →
                         </span>
                       </div>
-                      <span className="font-semibold text-primary transition group-hover:text-[#981b1f]">
-                        Editar →
-                      </span>
                     </div>
                   </div>
                 </button>
