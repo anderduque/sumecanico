@@ -123,11 +123,15 @@ export default async function ProductoPage({
               <span className={`border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${stockTone}`}>
                 {stockLabel}
               </span>
-              <span className="text-2xl font-semibold text-white">
-                {product.pricingMode === "check_availability"
-                  ? "Consultar disponibilidad"
-                  : formatMoney(product.priceCents, { currency: product.currency })}
-              </span>
+              {product.pricingMode === "check_availability" ? (
+                <span className="inline-flex items-center rounded-xl border border-amber-300/25 bg-amber-300/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.14em] text-amber-200">
+                  Consultar disponibilidad
+                </span>
+              ) : (
+                <span className="text-2xl font-semibold text-white">
+                  {formatMoney(product.priceCents, { currency: product.currency })}
+                </span>
+              )}
             </div>
           </div>
         </Container>
@@ -224,11 +228,15 @@ export default async function ProductoPage({
                   </div>
                 </div>
                 <div className="px-6 py-6">
-                  <div className="text-3xl font-semibold tracking-tight text-zinc-950">
-                    {product.pricingMode === "check_availability"
-                      ? "Consultar disponibilidad"
-                      : formatMoney(product.priceCents, { currency: product.currency })}
-                  </div>
+                  {product.pricingMode === "check_availability" ? (
+                    <div className="inline-flex items-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-amber-900">
+                      Consultar disponibilidad
+                    </div>
+                  ) : (
+                    <div className="text-3xl font-semibold tracking-tight text-zinc-950">
+                      {formatMoney(product.priceCents, { currency: product.currency })}
+                    </div>
+                  )}
                   <p className="mt-3 text-justify text-sm leading-7 text-zinc-700">
                     {product.pricingMode === "check_availability"
                       ? "Este repuesto requiere confirmación de existencia y precio al momento. Escríbenos y validamos referencia, compatibilidad y disponibilidad real."

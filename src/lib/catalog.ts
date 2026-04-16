@@ -291,6 +291,7 @@ export const services: Service[] = [
       "Mejora la imagen general del vehículo",
       "Protege la carrocería contra corrosión y desgaste",
       "Ayuda a conservar valor estético y comercial",
+      "Somos el único taller que da certificado de garantía de 3 a 5 años “Varias condiciones aplican”",
     ],
     faqs: [
       {
