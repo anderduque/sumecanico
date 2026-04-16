@@ -20,7 +20,7 @@ function isProduct(x: unknown): x is Product {
   if (p.sku !== undefined && typeof p.sku !== "string") return false;
   if (
     p.shockBrand !== undefined &&
-    !["GREKIS", "GREBIS", "NOR", "OKAMI", "TOKICO", "GABRIEL", "MONROE", "OLDMAN EMU", "MASTER KING", "CIC", "TOYOTA ORIGINAL"].includes(
+    !["GREKIS", "NOR", "OKAMI", "TOKICO", "GABRIEL", "MONROE", "OLDMAN EMU", "MASTER KING", "CIC", "TOYOTA ORIGINAL"].includes(
       p.shockBrand,
     )
   ) {
@@ -116,8 +116,6 @@ async function getProductsUncached(): Promise<Product[]> {
 
 function normalizeProduct(product: Product): Product {
   const imageUrls = getProductImageUrls(product);
-  const normalizedShockBrand =
-    product.shockBrand === "GREBIS" ? "GREKIS" : product.shockBrand;
   return {
     ...product,
     slug: product.slug.trim(),
@@ -126,7 +124,7 @@ function normalizeProduct(product: Product): Product {
     shockPosition:
       product.category.trim() === "Amortiguadores" ? product.shockPosition : undefined,
     sku: product.category.trim() === "Amortiguadores" ? product.sku?.trim() || undefined : undefined,
-    shockBrand: product.category.trim() === "Amortiguadores" ? normalizedShockBrand : undefined,
+    shockBrand: product.category.trim() === "Amortiguadores" ? product.shockBrand : undefined,
     pricingMode: product.pricingMode === "check_availability" ? "check_availability" : "fixed",
     currency: product.currency.trim().toUpperCase(),
     imageUrl: getProductCoverImage({ imageUrl: product.imageUrl, imageUrls }),

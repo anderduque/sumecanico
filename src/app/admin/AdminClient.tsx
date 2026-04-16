@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Container } from "@/components/Container";
 import { getProductCoverImage, getProductImageUrls, type Product } from "@/lib/productTypes";
 import type { PaymentMethod } from "@/lib/paymentMethodsStore";
@@ -476,6 +476,12 @@ function SpinnerIcon({ className = "" }: { className?: string }) {
   );
 }
 
+const adminAuthHeaderStorageKey = "adminAuthHeader";
+const adminUserStorageKey = "adminUser";
+const adminLastActiveStorageKey = "adminLastActiveAt";
+const adminIdleTimeoutMs = 15 * 60 * 1000;
+const adminActivityWriteThrottleMs = 12_000;
+
 export function AdminClient() {
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
@@ -541,7 +547,33 @@ export function AdminClient() {
     return models;
   }, [compatBodyStyle, compatBrand]);
 
+  const lastActivityWriteAtRef = useRef(0);
+
+  const clearStoredAuth = useCallback(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.removeItem(adminAuthHeaderStorageKey);
+      window.sessionStorage.removeItem(adminUserStorageKey);
+      window.sessionStorage.removeItem(adminLastActiveStorageKey);
+    } catch {
+      return;
+    }
+  }, []);
+
+  const bumpActivity = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const now = Date.now();
+    if (now - lastActivityWriteAtRef.current < adminActivityWriteThrottleMs) return;
+    lastActivityWriteAtRef.current = now;
+    try {
+      window.sessionStorage.setItem(adminLastActiveStorageKey, String(now));
+    } catch {
+      return;
+    }
+  }, []);
+
   const logout = useCallback(() => {
+    clearStoredAuth();
     setAuthHeader(null);
     setPassword("");
     setProducts([]);
@@ -578,15 +610,7 @@ export function AdminClient() {
     setOrdersState("idle");
     setOrdersError(null);
     setSelectedOrderId(null);
-  }, []);
-
-  const clearStoredAuth = useCallback(() => {
-    return;
-  }, []);
-
-  const bumpActivity = useCallback(() => {
-    return;
-  }, []);
+  }, [clearStoredAuth]);
 
   function openNewPaymentMethodModal() {
     const nextSort = paymentMethods.length > 0 ? Math.max(...paymentMethods.map((m) => m.sort)) + 10 : 10;
@@ -837,6 +861,21 @@ export function AdminClient() {
   }, [bumpActivity, clearStoredAuth]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedHeader = window.sessionStorage.getItem(adminAuthHeaderStorageKey);
+    const storedUser = window.sessionStorage.getItem(adminUserStorageKey);
+    const lastActive = Number(window.sessionStorage.getItem(adminLastActiveStorageKey));
+    if (storedUser) setUser(storedUser);
+    if (!storedHeader) return;
+    if (!Number.isFinite(lastActive) || Date.now() - lastActive > adminIdleTimeoutMs) {
+      clearStoredAuth();
+      return;
+    }
+    setAuthHeader(storedHeader);
+    bumpActivity();
+  }, [bumpActivity, clearStoredAuth]);
+
+  useEffect(() => {
     if (!authHeader) return;
     const t = window.setTimeout(() => {
       void load(authHeader);
@@ -868,6 +907,35 @@ export function AdminClient() {
       active = false;
     };
   }, [authHeader]);
+
+  useEffect(() => {
+    if (!authHeader) return;
+    bumpActivity();
+    const handler = () => bumpActivity();
+    window.addEventListener("mousemove", handler);
+    window.addEventListener("keydown", handler);
+    window.addEventListener("scroll", handler);
+    window.addEventListener("click", handler);
+    window.addEventListener("touchstart", handler);
+    return () => {
+      window.removeEventListener("mousemove", handler);
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener("scroll", handler);
+      window.removeEventListener("click", handler);
+      window.removeEventListener("touchstart", handler);
+    };
+  }, [authHeader, bumpActivity]);
+
+  useEffect(() => {
+    if (!authHeader) return;
+    const id = window.setInterval(() => {
+      const lastActive = Number(window.sessionStorage.getItem(adminLastActiveStorageKey));
+      if (!Number.isFinite(lastActive) || Date.now() - lastActive > adminIdleTimeoutMs) {
+        logout();
+      }
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, [authHeader, logout]);
 
   function selectProduct(p: Product) {
     const normalized = withNormalizedProductImages(p);
@@ -1138,6 +1206,14 @@ export function AdminClient() {
     if (ok) {
       setError(null);
       setPassword("");
+      try {
+        window.sessionStorage.setItem(adminAuthHeaderStorageKey, header);
+        window.sessionStorage.setItem(adminUserStorageKey, nextUser);
+        window.sessionStorage.setItem(adminLastActiveStorageKey, String(Date.now()));
+      } catch {
+        return;
+      }
+      bumpActivity();
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
@@ -1557,7 +1633,7 @@ export function AdminClient() {
                 <div>
                   Cargando repuestos...
                   <span className="ml-2 font-medium text-amber-800/80">
-                    El sistema está trayendo la información del catálogo.
+                    El sistema est&aacute; trayendo la informaci&oacute;n del cat&aacute;logo.
                   </span>
                 </div>
               </div>
@@ -2456,44 +2532,46 @@ export function AdminClient() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/50"
-            onClick={() => {
-              if (state === "loading") return;
-              setShowPanel(false);
-            }}
+            onClick={() => setShowPanel(false)}
             aria-hidden="true"
           />
           <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl lg:max-w-2xl">
-            {state === "loading" ? (
-              <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/78 backdrop-blur-[2px]">
-                <div className="mx-4 w-full max-w-sm rounded-2xl border border-zinc-200 bg-white px-6 py-7 text-center shadow-[0_25px_80px_-35px_rgba(0,0,0,0.35)]">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
-                    <SpinnerIcon className="h-7 w-7 animate-spin" />
-                  </div>
-                  <div className="mt-4 text-lg font-semibold text-zinc-950">
-                    {isEditingExisting ? "Guardando cambios" : "Guardando repuesto"}
-                  </div>
-                  <div className="mt-2 text-sm leading-6 text-zinc-600">
-                    {isEditingExisting
-                      ? "Estamos actualizando la información del repuesto."
-                      : "Estamos procesando y guardando el nuevo repuesto."}
-                  </div>
-                </div>
-              </div>
-            ) : null}
             <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
               <div className="text-sm font-semibold text-zinc-950">
-                {isEditingExisting ? "Editar repuesto" : "Crear repuesto"}
+                {state === "loading"
+                  ? isEditingExisting
+                    ? "Guardando cambios"
+                    : "Guardando repuesto"
+                  : isEditingExisting
+                    ? "Editar repuesto"
+                    : "Crear repuesto"}
               </div>
               <button
                 type="button"
-                className="rounded-md border border-zinc-200 px-2 py-1 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md border border-zinc-200 px-2 py-1 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
                 onClick={() => setShowPanel(false)}
-                disabled={state === "loading"}
               >
                 Cerrar
               </button>
             </div>
             <div className="relative flex-1 overflow-y-auto p-5">
+                  {state === "loading" ? (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/78 backdrop-blur-[2px]">
+                      <div className="mx-4 w-full max-w-sm rounded-2xl border border-zinc-200 bg-white px-6 py-7 text-center shadow-[0_25px_80px_-35px_rgba(0,0,0,0.35)]">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                          <SpinnerIcon className="h-7 w-7 animate-spin" />
+                        </div>
+                        <div className="mt-4 text-lg font-semibold text-zinc-950">
+                          {isEditingExisting ? "Guardando cambios" : "Guardando repuesto"}
+                        </div>
+                        <div className="mt-2 text-sm leading-6 text-zinc-600">
+                          {isEditingExisting
+                            ? "Estamos actualizando la informaci&oacute;n del repuesto."
+                            : "Estamos procesando y guardando el nuevo repuesto."}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="grid gap-3">
                     <div className="grid gap-2">
                       <label className="text-sm font-semibold text-zinc-900" htmlFor="name">
