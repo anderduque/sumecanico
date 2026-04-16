@@ -1606,7 +1606,7 @@ export function AdminClient() {
 
       {tab === "products" ? (
         <div className="mt-4 border border-zinc-200 bg-white">
-          <div className="flex flex-col gap-4 border-b border-zinc-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="sticky top-0 z-30 flex flex-col gap-4 border-b border-zinc-200 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
                 Repuestos
@@ -1625,20 +1625,6 @@ export function AdminClient() {
               Nuevo repuesto
             </button>
           </div>
-
-          {state === "loading" ? (
-            <div className="border-b border-amber-200 bg-amber-50 px-6 py-4">
-              <div className="flex items-center gap-3 text-sm font-semibold text-amber-900">
-                <SpinnerIcon className="h-5 w-5 animate-spin" />
-                <div>
-                  Cargando repuestos...
-                  <span className="ml-2 font-medium text-amber-800/80">
-                    El sistema est&aacute; trayendo la informaci&oacute;n del cat&aacute;logo.
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : null}
 
           {state === "loading" && products.length === 0 ? (
             <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
@@ -1748,6 +1734,14 @@ export function AdminClient() {
           ) : (
             <div className="px-6 py-10 text-sm text-zinc-600">No hay productos.</div>
           )}
+          {state === "loading" && !showPanel ? (
+            <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
+              <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-900 shadow-2xl">
+                <SpinnerIcon className="h-5 w-5 animate-spin" />
+                <div>Cargando repuestos...</div>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {tab === "payments" ? (
@@ -3125,6 +3119,12 @@ export function AdminClient() {
               {error ? (
                 <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
                   {error}
+                </div>
+              ) : null}
+              {state === "loading" ? (
+                <div className="mb-3 flex items-center justify-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                  <SpinnerIcon className="h-5 w-5 animate-spin" />
+                  <div>{isEditingExisting ? "Guardando cambios..." : "Guardando repuesto..."}</div>
                 </div>
               ) : null}
               {showDeleteConfirm ? (
