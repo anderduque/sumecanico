@@ -14,12 +14,18 @@ function isProduct(x: unknown): x is Product {
   if (typeof p.name !== "string" || p.name.trim() === "") return false;
   if (typeof p.summary !== "string") return false;
   if (typeof p.category !== "string") return false;
+  if (p.shockPosition !== undefined && p.shockPosition !== "delantero" && p.shockPosition !== "trasero") {
+    return false;
+  }
   if (p.imageUrl !== undefined && typeof p.imageUrl !== "string") return false;
   if (p.imageUrls !== undefined) {
     if (!Array.isArray(p.imageUrls)) return false;
     for (const item of p.imageUrls) {
       if (typeof item !== "string") return false;
     }
+  }
+  if (p.pricingMode !== undefined && p.pricingMode !== "fixed" && p.pricingMode !== "check_availability") {
+    return false;
   }
   if (typeof p.priceCents !== "number" || !Number.isFinite(p.priceCents)) return false;
   if (typeof p.currency !== "string" || p.currency.trim() === "") return false;
@@ -105,9 +111,14 @@ function normalizeProduct(product: Product): Product {
     slug: product.slug.trim(),
     name: product.name.trim(),
     category: product.category.trim(),
+    shockPosition:
+      product.category.trim() === "Amortiguadores" ? product.shockPosition : undefined,
+    pricingMode: product.pricingMode === "check_availability" ? "check_availability" : "fixed",
     currency: product.currency.trim().toUpperCase(),
     imageUrl: getProductCoverImage({ imageUrl: product.imageUrl, imageUrls }),
     imageUrls: imageUrls.length ? imageUrls : undefined,
+    priceCents:
+      product.pricingMode === "check_availability" ? 0 : Math.max(0, Math.trunc(product.priceCents)),
     inventoryQty:
       typeof product.inventoryQty === "number" ? Math.max(0, Math.trunc(product.inventoryQty)) : undefined,
     specs:

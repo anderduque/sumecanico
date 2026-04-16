@@ -46,10 +46,14 @@ export default async function ProductoPage({
       : "border-amber-200 bg-amber-50 text-amber-800";
   const detailItems = [
     { label: "Categoría", value: product.category },
+    ...(product.shockPosition ? [{ label: "Posición", value: product.shockPosition }] : []),
     { label: "Disponibilidad", value: stockLabel },
     {
       label: "Precio referencial",
-      value: formatMoney(product.priceCents, { currency: product.currency }),
+      value:
+        product.pricingMode === "check_availability"
+          ? "Consultar disponibilidad"
+          : formatMoney(product.priceCents, { currency: product.currency }),
     },
     {
       label: "Inventario",
@@ -111,11 +115,18 @@ export default async function ProductoPage({
               <span className="border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-200">
                 {product.category}
               </span>
+              {product.shockPosition ? (
+                <span className="border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-200">
+                  {product.shockPosition}
+                </span>
+              ) : null}
               <span className={`border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${stockTone}`}>
                 {stockLabel}
               </span>
               <span className="text-2xl font-semibold text-white">
-                {formatMoney(product.priceCents, { currency: product.currency })}
+                {product.pricingMode === "check_availability"
+                  ? "Consultar disponibilidad"
+                  : formatMoney(product.priceCents, { currency: product.currency })}
               </span>
             </div>
           </div>
@@ -214,11 +225,14 @@ export default async function ProductoPage({
                 </div>
                 <div className="px-6 py-6">
                   <div className="text-3xl font-semibold tracking-tight text-zinc-950">
-                    {formatMoney(product.priceCents, { currency: product.currency })}
+                    {product.pricingMode === "check_availability"
+                      ? "Consultar disponibilidad"
+                      : formatMoney(product.priceCents, { currency: product.currency })}
                   </div>
                   <p className="mt-3 text-justify text-sm leading-7 text-zinc-700">
-                    Agrega este repuesto al carrito y luego confirmamos referencia, compatibilidad
-                    y disponibilidad real antes de procesar la reserva.
+                    {product.pricingMode === "check_availability"
+                      ? "Este repuesto requiere confirmación de existencia y precio al momento. Escríbenos y validamos referencia, compatibilidad y disponibilidad real."
+                      : "Agrega este repuesto al carrito y luego confirmamos referencia, compatibilidad y disponibilidad real antes de procesar la reserva."}
                   </p>
 
                   <ProductDetailActions product={product} />

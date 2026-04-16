@@ -150,6 +150,7 @@ export default async function TiendaPage({
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {visibleProducts.map((product) => {
               const coverImage = getProductCoverImage(product);
+              const isConsultOnly = product.pricingMode === "check_availability";
               return (
                 <article
                   key={product.slug}
@@ -193,6 +194,11 @@ export default async function TiendaPage({
                           <span className="border border-white/12 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
                             {product.category}
                           </span>
+                          {product.shockPosition ? (
+                            <span className="border border-white/12 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
+                              {product.shockPosition}
+                            </span>
+                          ) : null}
                           <span
                             className={[
                               "px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
@@ -208,11 +214,17 @@ export default async function TiendaPage({
 
                       <div className="shrink-0 text-right">
                         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                          Precio
+                          {isConsultOnly ? "Estado" : "Precio"}
                         </div>
-                        <div className="mt-1 text-xl font-semibold text-white">
-                          {formatMoney(product.priceCents, { currency: product.currency })}
-                        </div>
+                        {isConsultOnly ? (
+                          <div className="mt-1 text-sm font-semibold uppercase tracking-[0.12em] text-amber-300">
+                            Consultar disponibilidad
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-xl font-semibold text-white">
+                            {formatMoney(product.priceCents, { currency: product.currency })}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -225,11 +237,13 @@ export default async function TiendaPage({
                       >
                         Ver detalles →
                       </Link>
-                      <AddToCartButton
-                        productSlug={product.slug}
-                        product={product}
-                        className="w-full rounded-[1rem]"
-                      />
+                      {!isConsultOnly ? (
+                        <AddToCartButton
+                          productSlug={product.slug}
+                          product={product}
+                          className="w-full rounded-[1rem]"
+                        />
+                      ) : null}
                     </div>
                   </div>
                 </article>

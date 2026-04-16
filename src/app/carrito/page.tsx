@@ -40,7 +40,10 @@ export default function CarritoPage() {
 
   useEffect(() => {
     if (!catalogReady || Object.keys(productsBySlug).length === 0) return;
-    const invalid = lines.filter((l) => !productsBySlug[l.productSlug]);
+    const invalid = lines.filter((l) => {
+      const product = productsBySlug[l.productSlug];
+      return !product || product.pricingMode === "check_availability";
+    });
     if (invalid.length === 0) return;
     for (const line of invalid) remove(line.productSlug);
   }, [catalogReady, lines, productsBySlug, remove]);

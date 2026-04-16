@@ -17,12 +17,18 @@ function isProductPayload(x: unknown): x is Product {
   if (typeof p.name !== "string" || p.name.trim() === "") return false;
   if (typeof p.summary !== "string") return false;
   if (typeof p.category !== "string") return false;
+  if (p.shockPosition !== undefined && p.shockPosition !== "delantero" && p.shockPosition !== "trasero") {
+    return false;
+  }
   if (p.imageUrl !== undefined && typeof p.imageUrl !== "string") return false;
   if (p.imageUrls !== undefined) {
     if (!Array.isArray(p.imageUrls)) return false;
     for (const item of p.imageUrls) {
       if (typeof item !== "string") return false;
     }
+  }
+  if (p.pricingMode !== undefined && p.pricingMode !== "fixed" && p.pricingMode !== "check_availability") {
+    return false;
   }
   if (typeof p.priceCents !== "number" || !Number.isFinite(p.priceCents)) return false;
   if (typeof p.currency !== "string" || p.currency.trim() === "") return false;

@@ -93,6 +93,7 @@ function emptyProduct(): Product {
     category: "",
     imageUrl: "",
     imageUrls: [],
+    pricingMode: "fixed",
     priceCents: 0,
     currency: "USD",
     stockStatus: "on_request",
@@ -505,7 +506,9 @@ export function AdminClient() {
   const isEditingExisting = useMemo(() => {
     return !!draft.slug && products.some((p) => p.slug === draft.slug);
   }, [draft.slug, products]);
+  const requiresShockPosition = draft.category === "Amortiguadores";
   const shouldTrackInventory = draft.stockStatus === "in_stock";
+  const shouldConsultAvailability = draft.pricingMode === "check_availability";
   const draftImageUrls = useMemo(() => getProductImageUrls(draft), [draft]);
   const compatModelOptions = useMemo(() => {
     if (!compatBrand || !compatBodyStyle) return [];
@@ -851,6 +854,7 @@ export function AdminClient() {
       ...normalized,
       imageUrl: normalized.imageUrl ?? "",
       imageUrls: normalized.imageUrls ?? [],
+      pricingMode: normalized.pricingMode ?? "fixed",
       inventoryQty: normalizedInventory,
       compatibleWith: normalized.compatibleWith ?? [],
       specs: normalized.specs ?? [],
@@ -903,6 +907,12 @@ export function AdminClient() {
       setError("La categoría es requerida.");
       return;
     }
+    const shockPosition = category === "Amortiguadores" ? draft.shockPosition : undefined;
+    if (category === "Amortiguadores" && !shockPosition) {
+      setState("error");
+      setError("Selecciona si el amortiguador es delantero o trasero.");
+      return;
+    }
     const summary = draft.summary.trim();
     if (!summary) {
       setState("error");
@@ -916,12 +926,12 @@ export function AdminClient() {
       setError("Debes cargar al menos una imagen.");
       return;
     }
-    if (!Number.isFinite(draft.priceCents) || draft.priceCents <= 0) {
+    if (!shouldConsultAvailability && (!Number.isFinite(draft.priceCents) || draft.priceCents <= 0)) {
       setState("error");
       setError("El precio es requerido.");
       return;
     }
-    if (!draft.currency?.trim()) {
+    if (!shouldConsultAvailability && !draft.currency?.trim()) {
       setState("error");
       setError("La moneda es requerida.");
       return;
@@ -949,7 +959,10 @@ export function AdminClient() {
       name,
       summary,
       category,
-      currency: draft.currency.trim().toUpperCase(),
+      shockPosition,
+      pricingMode: shouldConsultAvailability ? "check_availability" : "fixed",
+      priceCents: shouldConsultAvailability ? 0 : draft.priceCents,
+      currency: shouldConsultAvailability ? "USD" : draft.currency.trim().toUpperCase(),
       imageUrl,
       imageUrls,
       compatibleWith: parseCompatibleWith(compatibleWithText),
@@ -1549,11 +1562,17 @@ export function AdminClient() {
 
                       <div className="shrink-0 text-right">
                         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                          Precio
+                          {p.pricingMode === "check_availability" ? "Estado" : "Precio"}
                         </div>
-                        <div className="mt-1 text-lg font-semibold text-zinc-950">
-                          {formatMoney(p.priceCents, { currency: p.currency })}
-                        </div>
+                        {p.pricingMode === "check_availability" ? (
+                          <div className="mt-1 text-sm font-semibold uppercase tracking-[0.12em] text-amber-700">
+                            Consultar disponibilidad
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-lg font-semibold text-zinc-950">
+                            {formatMoney(p.priceCents, { currency: p.currency })}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -2399,7 +2418,16 @@ export function AdminClient() {
                       <select
                         id="category"
                         value={draft.category}
-                        onChange={(e) => setDraft((p) => ({ ...p, category: e.target.value }))}
+                        onChange={(e) =>
+                          setDraft((p) => {
+                            const nextCategory = e.target.value;
+                            return {
+                              ...p,
+                              category: nextCategory,
+                              shockPosition: nextCategory === "Amortiguadores" ? p.shockPosition : undefined,
+                            };
+                          })
+                        }
                         required
                         className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
                       >
@@ -2411,6 +2439,30 @@ export function AdminClient() {
                         ))}
                       </select>
                     </div>
+
+                    {requiresShockPosition ? (
+                      <div className="grid gap-2">
+                        <label className="text-sm font-semibold text-zinc-900" htmlFor="shockPosition">
+                          Posición*
+                        </label>
+                        <select
+                          id="shockPosition"
+                          value={draft.shockPosition ?? ""}
+                          onChange={(e) =>
+                            setDraft((p) => ({
+                              ...p,
+                              shockPosition: (e.target.value || undefined) as Product["shockPosition"],
+                            }))
+                          }
+                          required
+                          className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                        >
+                          <option value="">Selecciona una posición</option>
+                          <option value="delantero">Delantero</option>
+                          <option value="trasero">Trasero</option>
+                        </select>
+                      </div>
+                    ) : null}
 
                     <div className="grid gap-2">
                       <label className="text-sm font-semibold text-zinc-900" htmlFor="imageFile">
@@ -2534,49 +2586,79 @@ export function AdminClient() {
                     </div>
 
                     <div className="grid gap-2">
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="grid gap-3">
                         <div className="grid gap-2">
-                          <label className="text-sm font-semibold text-zinc-900" htmlFor="priceCents">
-                            Precio*
-                          </label>
-                          <input
-                            id="priceCents"
-                            value={priceInput}
-                            onFocus={() => {
-                              if (priceInput === "0" || priceInput === "0.00") setPriceInput("");
-                            }}
-                            onChange={(e) => {
-                              const raw = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
-                              const cleaned = raw.replace(/^0+(?=\d)/, "");
-                              setPriceInput(cleaned);
-                              const num = parseFloat(cleaned);
-                              const cents = Number.isFinite(num) ? Math.max(0, Math.round(num * 100)) : 0;
-                              setDraft((p) => ({ ...p, priceCents: cents }));
-                            }}
-                            inputMode="decimal"
-                            required
-                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <label className="text-sm font-semibold text-zinc-900" htmlFor="currency">
-                            Moneda*
+                          <label className="text-sm font-semibold text-zinc-900" htmlFor="pricingMode">
+                            Tipo de precio*
                           </label>
                           <select
-                            id="currency"
-                            value={draft.currency}
-                            onChange={(e) => setDraft((p) => ({ ...p, currency: e.target.value }))}
-                            required
+                            id="pricingMode"
+                            value={draft.pricingMode ?? "fixed"}
+                            onChange={(e) => {
+                              const nextMode = e.target.value as Product["pricingMode"];
+                              setDraft((p) => ({
+                                ...p,
+                                pricingMode: nextMode,
+                                priceCents: nextMode === "check_availability" ? 0 : p.priceCents,
+                              }));
+                              if (nextMode === "check_availability") {
+                                setPriceInput("");
+                              }
+                            }}
                             className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
                           >
-                            <option value="USD">Dólares (USD)</option>
-                            <option value="VES">Bolívares (Bs)</option>
+                            <option value="fixed">Precio definido</option>
+                            <option value="check_availability">Consultar disponibilidad</option>
                           </select>
                         </div>
+                        {!shouldConsultAvailability ? (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="grid gap-2">
+                              <label className="text-sm font-semibold text-zinc-900" htmlFor="priceCents">
+                                Precio*
+                              </label>
+                              <input
+                                id="priceCents"
+                                value={priceInput}
+                                onFocus={() => {
+                                  if (priceInput === "0" || priceInput === "0.00") setPriceInput("");
+                                }}
+                                onChange={(e) => {
+                                  const raw = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
+                                  const cleaned = raw.replace(/^0+(?=\d)/, "");
+                                  setPriceInput(cleaned);
+                                  const num = parseFloat(cleaned);
+                                  const cents = Number.isFinite(num) ? Math.max(0, Math.round(num * 100)) : 0;
+                                  setDraft((p) => ({ ...p, priceCents: cents }));
+                                }}
+                                inputMode="decimal"
+                                required
+                                className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <label className="text-sm font-semibold text-zinc-900" htmlFor="currency">
+                                Moneda*
+                              </label>
+                              <select
+                                id="currency"
+                                value={draft.currency}
+                                onChange={(e) => setDraft((p) => ({ ...p, currency: e.target.value }))}
+                                required
+                                className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                              >
+                                <option value="USD">Dólares (USD)</option>
+                                <option value="VES">Bolívares (Bs)</option>
+                              </select>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                       <div className="text-xs text-zinc-600">
-                        Vista: {formatMoney(Number(draft.priceCents) || 0, { currency: draft.currency })}
+                        {shouldConsultAvailability
+                          ? "El cliente verá “Consultar disponibilidad” en lugar del monto."
+                          : `Vista: ${formatMoney(Number(draft.priceCents) || 0, { currency: draft.currency })}`}
                       </div>
                     </div>
 

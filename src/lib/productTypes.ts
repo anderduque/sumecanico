@@ -3,8 +3,10 @@ export type Product = {
   name: string;
   summary: string;
   category: string;
+  shockPosition?: "delantero" | "trasero";
   imageUrl?: string;
   imageUrls?: string[];
+  pricingMode?: "fixed" | "check_availability";
   priceCents: number;
   currency: string;
   stockStatus: "in_stock" | "on_request";
