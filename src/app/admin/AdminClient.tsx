@@ -1606,7 +1606,7 @@ export function AdminClient() {
 
       {tab === "products" ? (
         <div className="mt-4 border border-zinc-200 bg-white">
-          <div className="sticky top-0 z-30 flex flex-col gap-4 border-b border-zinc-200 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="sticky top-16 z-40 flex flex-col gap-4 border-b border-zinc-200 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
                 Repuestos

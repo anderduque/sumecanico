@@ -118,13 +118,25 @@ export default async function TiendaPage({
                 <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.24em] text-primary/85" htmlFor="q">
                   Buscar repuesto
                 </label>
-                <input
-                  id="q"
-                  name="q"
-                  defaultValue={resolvedSearchParams?.q ?? ""}
-                  placeholder="Buscar por nombre, categoría o descripción"
-                  className="w-full rounded-[1rem] border border-white/15 bg-white px-4 py-3 text-sm text-zinc-950 placeholder:text-zinc-500 outline-none transition focus:border-primary"
-                />
+                <div className="relative">
+                  <input
+                    id="q"
+                    name="q"
+                    defaultValue={resolvedSearchParams?.q ?? ""}
+                    placeholder="Buscar por nombre, categoría o descripción"
+                    className="w-full rounded-[1rem] border border-white/15 bg-white px-4 py-3 pr-14 text-sm text-zinc-950 placeholder:text-zinc-500 outline-none transition focus:border-primary"
+                  />
+                  <button
+                    type="submit"
+                    aria-label="Buscar"
+                    className="absolute inset-y-1.5 right-1.5 inline-flex w-11 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-[#981b1f]"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-none stroke-current" strokeWidth="2">
+                      <circle cx="11" cy="11" r="6" />
+                      <path d="M20 20l-4.2-4.2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
               </form>
             </div>
           </div>

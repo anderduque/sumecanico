@@ -77,7 +77,7 @@ export function StoreFilters({
     <form
       action="/tienda"
       method="get"
-      className="mb-8 w-full rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-[0_20px_60px_-45px_rgba(0,0,0,0.2)] sm:p-6"
+      className="sticky top-24 z-30 mb-8 w-full rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-[0_20px_60px_-45px_rgba(0,0,0,0.2)] md:top-16 sm:p-6"
     >
       <input type="hidden" name="q" value={q} />
 
