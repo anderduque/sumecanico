@@ -11,6 +11,7 @@ type ProductGalleryProps = {
 export function ProductGallery({ name, images }: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selectedImage = images[selectedIndex] ?? images[0] ?? "";
+  const hasMultipleImages = images.length > 1;
 
   if (!selectedImage) return null;
 
@@ -21,8 +22,8 @@ export function ProductGallery({ name, images }: ProductGalleryProps) {
       </div>
 
       <div className="p-3 sm:p-6">
-        <div className="grid gap-3 lg:grid-cols-[88px_minmax(0,1fr)] lg:items-stretch lg:gap-4">
-          {images.length > 1 ? (
+        <div className={hasMultipleImages ? "grid gap-3 lg:grid-cols-[88px_minmax(0,1fr)] lg:items-stretch lg:gap-4" : ""}>
+          {hasMultipleImages ? (
             <div className="order-2 lg:order-1">
               <div className="rounded-[1.15rem] border border-zinc-200 bg-[#f7f4ef] p-2 sm:rounded-[1.5rem] sm:p-3">
                 <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-1 lg:overflow-visible lg:pb-0">
@@ -58,8 +59,15 @@ export function ProductGallery({ name, images }: ProductGalleryProps) {
             </div>
           ) : null}
 
-          <div className="order-1 lg:order-2">
-            <div className="relative aspect-[1/1.08] overflow-hidden rounded-[1.15rem] border border-zinc-200 bg-white sm:aspect-[4/3.8] sm:rounded-[1.75rem] lg:h-[38rem] lg:aspect-auto">
+          <div className={hasMultipleImages ? "order-1 lg:order-2" : ""}>
+            <div
+              className={[
+                "relative overflow-hidden border border-zinc-200 bg-white",
+                hasMultipleImages
+                  ? "aspect-[1/1.08] rounded-[1.15rem] sm:aspect-[4/3.8] sm:rounded-[1.75rem] lg:h-[38rem] lg:aspect-auto"
+                  : "min-h-[22rem] rounded-[1.25rem] sm:min-h-[30rem] sm:rounded-[1.75rem] lg:min-h-[42rem]",
+              ].join(" ")}
+            >
               <Image
                 key={selectedImage}
                 src={selectedImage}
@@ -67,8 +75,8 @@ export function ProductGallery({ name, images }: ProductGalleryProps) {
                 fill
                 priority={selectedIndex === 0}
                 unoptimized={selectedImage.startsWith("data:")}
-                className="object-contain p-3 sm:p-6"
-                sizes="(min-width: 1024px) 42rem, 100vw"
+                className={hasMultipleImages ? "object-contain p-3 sm:p-6" : "object-contain p-2 sm:p-4"}
+                sizes={hasMultipleImages ? "(min-width: 1024px) 42rem, 100vw" : "100vw"}
               />
             </div>
           </div>

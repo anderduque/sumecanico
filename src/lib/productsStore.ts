@@ -17,6 +17,15 @@ function isProduct(x: unknown): x is Product {
   if (p.shockPosition !== undefined && p.shockPosition !== "delantero" && p.shockPosition !== "trasero") {
     return false;
   }
+  if (p.sku !== undefined && typeof p.sku !== "string") return false;
+  if (
+    p.shockBrand !== undefined &&
+    !["GREBIS", "NOR", "OKAMI", "TOKICO", "GABRIEL", "MONROE", "OLDMAN EMU", "MASTER KING", "CIC", "TOYOTA ORIGINAL"].includes(
+      p.shockBrand,
+    )
+  ) {
+    return false;
+  }
   if (p.imageUrl !== undefined && typeof p.imageUrl !== "string") return false;
   if (p.imageUrls !== undefined) {
     if (!Array.isArray(p.imageUrls)) return false;
@@ -113,6 +122,8 @@ function normalizeProduct(product: Product): Product {
     category: product.category.trim(),
     shockPosition:
       product.category.trim() === "Amortiguadores" ? product.shockPosition : undefined,
+    sku: product.category.trim() === "Amortiguadores" ? product.sku?.trim() || undefined : undefined,
+    shockBrand: product.category.trim() === "Amortiguadores" ? product.shockBrand : undefined,
     pricingMode: product.pricingMode === "check_availability" ? "check_availability" : "fixed",
     currency: product.currency.trim().toUpperCase(),
     imageUrl: getProductCoverImage({ imageUrl: product.imageUrl, imageUrls }),

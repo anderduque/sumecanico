@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { Container } from "@/components/Container";
+import { StoreFilters } from "@/components/StoreFilters";
 import { formatMoney } from "@/lib/money";
 import { getProductCoverImage } from "@/lib/productTypes";
 import { getProducts } from "@/lib/productsStore";
@@ -14,30 +15,68 @@ export const metadata: Metadata = {
 export const runtime = "nodejs";
 const pageSize = 20;
 
+function normalizeFilterValue(value?: string) {
+  return (value ?? "").trim();
+}
+
+function isNonEmptyString(value: string | undefined): value is string {
+  return typeof value === "string" && value.trim() !== "";
+}
+
+function uniqueSortedStrings(values: Array<string | undefined>) {
+  return Array.from(new Set(values.filter(isNonEmptyString))).sort((a, b) => a.localeCompare(b));
+}
+
 export default async function TiendaPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string; page?: string }>;
+  searchParams?: Promise<{
+    q?: string;
+    page?: string;
+    category?: string;
+    stock?: string;
+    pricing?: string;
+    brand?: string;
+    position?: string;
+  }>;
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const products = await getProducts();
+  const categories = uniqueSortedStrings(products.map((p) => p.category));
   const q = (resolvedSearchParams?.q ?? "").trim().toLowerCase();
-  const list = q
-    ? products.filter((p) => {
-        const haystack = `${p.name} ${p.category} ${p.summary}`.toLowerCase();
-        return haystack.includes(q);
-      })
-    : products;
+  const category = normalizeFilterValue(resolvedSearchParams?.category);
+  const stock = normalizeFilterValue(resolvedSearchParams?.stock);
+  const pricing = normalizeFilterValue(resolvedSearchParams?.pricing);
+  const brand = normalizeFilterValue(resolvedSearchParams?.brand);
+  const position = normalizeFilterValue(resolvedSearchParams?.position);
+  const list = products.filter((p) => {
+    if (q) {
+      const haystack = `${p.name} ${p.category} ${p.summary} ${p.sku ?? ""} ${p.shockBrand ?? ""}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (category && p.category !== category) return false;
+    if (stock && p.stockStatus !== stock) return false;
+    if (pricing && (p.pricingMode ?? "fixed") !== pricing) return false;
+    if (brand && p.shockBrand !== brand) return false;
+    if (position && p.shockPosition !== position) return false;
+    return true;
+  });
   const requestedPage = Number.parseInt(resolvedSearchParams?.page ?? "1", 10);
   const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
   const currentPage =
     Number.isFinite(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, totalPages) : 1;
   const startIndex = (currentPage - 1) * pageSize;
   const visibleProducts = list.slice(startIndex, startIndex + pageSize);
+  const hasActiveFilters = Boolean(q || category || stock || pricing || brand || position);
 
   function buildPageHref(page: number) {
     const params = new URLSearchParams();
     if (resolvedSearchParams?.q?.trim()) params.set("q", resolvedSearchParams.q.trim());
+    if (category) params.set("category", category);
+    if (stock) params.set("stock", stock);
+    if (pricing) params.set("pricing", pricing);
+    if (brand) params.set("brand", brand);
+    if (position) params.set("position", position);
     if (page > 1) params.set("page", String(page));
     const query = params.toString();
     return query ? `/tienda?${query}` : "/tienda";
@@ -104,6 +143,59 @@ export default async function TiendaPage({
         </div>
 
         <Container className="relative py-12 sm:py-16">
+          <StoreFilters
+            q={resolvedSearchParams?.q ?? ""}
+            category={category}
+            stock={stock}
+            pricing={pricing}
+            brand={brand}
+            position={position}
+            categories={categories}
+            hasActiveFilters={hasActiveFilters}
+            filterProducts={products.map((product) => ({
+              category: product.category,
+              stockStatus: product.stockStatus,
+              pricingMode: product.pricingMode,
+              shockBrand: product.shockBrand,
+              shockPosition: product.shockPosition,
+            }))}
+          />
+
+          {hasActiveFilters ? (
+            <div className="mb-6 flex flex-wrap items-center gap-2">
+              {q ? (
+                <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                  Búsqueda: {resolvedSearchParams?.q}
+                </span>
+              ) : null}
+              {category ? (
+                <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                  Categoría: {category}
+                </span>
+              ) : null}
+              {stock ? (
+                <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                  Estado: {stock === "in_stock" ? "En stock" : "Bajo pedido"}
+                </span>
+              ) : null}
+              {pricing ? (
+                <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                  Precio: {pricing === "fixed" ? "Definido" : "Consultar"}
+                </span>
+              ) : null}
+              {brand ? (
+                <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                  Marca: {brand}
+                </span>
+              ) : null}
+              {position ? (
+                <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                  Posición: {position}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+
           {list.length > 0 ? (
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm font-medium text-zinc-700">
@@ -256,7 +348,7 @@ export default async function TiendaPage({
 
           {list.length === 0 ? (
             <div className="mt-10 border border-white/10 bg-[#1a1a1a] p-6 text-sm text-zinc-300">
-              No se encontraron productos con “{resolvedSearchParams?.q}”.
+              Lo sentimos no tenemos resultados para su búsqueda.
             </div>
           ) : null}
 

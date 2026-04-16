@@ -91,6 +91,9 @@ function emptyProduct(): Product {
     name: "",
     summary: "",
     category: "",
+    shockPosition: undefined,
+    sku: "",
+    shockBrand: undefined,
     imageUrl: "",
     imageUrls: [],
     pricingMode: "fixed",
@@ -151,6 +154,19 @@ const productCategoryOptions = [
   "Accesorios",
   "Filtros",
   "Adicional",
+] as const;
+
+const shockBrandOptions = [
+  "GREBIS",
+  "NOR",
+  "OKAMI",
+  "TOKICO",
+  "GABRIEL",
+  "MONROE",
+  "OLDMAN EMU",
+  "MASTER KING",
+  "CIC",
+  "TOYOTA ORIGINAL",
 ] as const;
 
 const specLabelOptions = [
@@ -922,6 +938,18 @@ export function AdminClient() {
       setError("Selecciona si el amortiguador es delantero o trasero.");
       return;
     }
+    const sku = category === "Amortiguadores" ? draft.sku?.trim() ?? "" : "";
+    if (category === "Amortiguadores" && !sku) {
+      setState("error");
+      setError("El SKU es requerido para amortiguadores.");
+      return;
+    }
+    const shockBrand = category === "Amortiguadores" ? draft.shockBrand : undefined;
+    if (category === "Amortiguadores" && !shockBrand) {
+      setState("error");
+      setError("Selecciona una marca para el amortiguador.");
+      return;
+    }
     const summary = draft.summary.trim();
     if (!summary) {
       setState("error");
@@ -969,6 +997,8 @@ export function AdminClient() {
       summary,
       category,
       shockPosition,
+      sku: sku || undefined,
+      shockBrand,
       pricingMode: shouldConsultAvailability ? "check_availability" : "fixed",
       priceCents: shouldConsultAvailability ? 0 : draft.priceCents,
       currency: shouldConsultAvailability ? "USD" : draft.currency.trim().toUpperCase(),
@@ -2495,6 +2525,8 @@ export function AdminClient() {
                               ...p,
                               category: nextCategory,
                               shockPosition: nextCategory === "Amortiguadores" ? p.shockPosition : undefined,
+                              sku: nextCategory === "Amortiguadores" ? p.sku : "",
+                              shockBrand: nextCategory === "Amortiguadores" ? p.shockBrand : undefined,
                             };
                           })
                         }
@@ -2511,26 +2543,65 @@ export function AdminClient() {
                     </div>
 
                     {requiresShockPosition ? (
-                      <div className="grid gap-2">
-                        <label className="text-sm font-semibold text-zinc-900" htmlFor="shockPosition">
-                          Posición*
-                        </label>
-                        <select
-                          id="shockPosition"
-                          value={draft.shockPosition ?? ""}
-                          onChange={(e) =>
-                            setDraft((p) => ({
-                              ...p,
-                              shockPosition: (e.target.value || undefined) as Product["shockPosition"],
-                            }))
-                          }
-                          required
-                          className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                        >
-                          <option value="">Selecciona una posición</option>
-                          <option value="delantero">Delantero</option>
-                          <option value="trasero">Trasero</option>
-                        </select>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="grid gap-2">
+                          <label className="text-sm font-semibold text-zinc-900" htmlFor="shockPosition">
+                            Posición*
+                          </label>
+                          <select
+                            id="shockPosition"
+                            value={draft.shockPosition ?? ""}
+                            onChange={(e) =>
+                              setDraft((p) => ({
+                                ...p,
+                                shockPosition: (e.target.value || undefined) as Product["shockPosition"],
+                              }))
+                            }
+                            required
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                          >
+                            <option value="">Selecciona una posición</option>
+                            <option value="delantero">Delantero</option>
+                            <option value="trasero">Trasero</option>
+                          </select>
+                        </div>
+                        <div className="grid gap-2">
+                          <label className="text-sm font-semibold text-zinc-900" htmlFor="sku">
+                            SKU*
+                          </label>
+                          <input
+                            id="sku"
+                            value={draft.sku ?? ""}
+                            onChange={(e) => setDraft((p) => ({ ...p, sku: e.target.value }))}
+                            required
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                            placeholder="GR55307"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <label className="text-sm font-semibold text-zinc-900" htmlFor="shockBrand">
+                            Marca*
+                          </label>
+                          <select
+                            id="shockBrand"
+                            value={draft.shockBrand ?? ""}
+                            onChange={(e) =>
+                              setDraft((p) => ({
+                                ...p,
+                                shockBrand: (e.target.value || undefined) as Product["shockBrand"],
+                              }))
+                            }
+                            required
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                          >
+                            <option value="">Selecciona una marca</option>
+                            {shockBrandOptions.map((brand) => (
+                              <option key={brand} value={brand}>
+                                {brand}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     ) : null}
 

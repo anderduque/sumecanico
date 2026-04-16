@@ -4,6 +4,18 @@ export type Product = {
   summary: string;
   category: string;
   shockPosition?: "delantero" | "trasero";
+  sku?: string;
+  shockBrand?:
+    | "GREBIS"
+    | "NOR"
+    | "OKAMI"
+    | "TOKICO"
+    | "GABRIEL"
+    | "MONROE"
+    | "OLDMAN EMU"
+    | "MASTER KING"
+    | "CIC"
+    | "TOYOTA ORIGINAL";
   imageUrl?: string;
   imageUrls?: string[];
   pricingMode?: "fixed" | "check_availability";

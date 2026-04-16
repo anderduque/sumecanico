@@ -20,6 +20,15 @@ function isProductPayload(x: unknown): x is Product {
   if (p.shockPosition !== undefined && p.shockPosition !== "delantero" && p.shockPosition !== "trasero") {
     return false;
   }
+  if (p.sku !== undefined && typeof p.sku !== "string") return false;
+  if (
+    p.shockBrand !== undefined &&
+    !["GREBIS", "NOR", "OKAMI", "TOKICO", "GABRIEL", "MONROE", "OLDMAN EMU", "MASTER KING", "CIC", "TOYOTA ORIGINAL"].includes(
+      p.shockBrand,
+    )
+  ) {
+    return false;
+  }
   if (p.imageUrl !== undefined && typeof p.imageUrl !== "string") return false;
   if (p.imageUrls !== undefined) {
     if (!Array.isArray(p.imageUrls)) return false;
