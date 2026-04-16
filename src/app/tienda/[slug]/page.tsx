@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/Container";
+import { ProductGallery } from "@/components/ProductGallery";
 import { ProductDetailActions } from "@/components/ProductDetailActions";
 import { formatMoney } from "@/lib/money";
 import { getProductCoverImage, getProductImageUrls } from "@/lib/productTypes";
@@ -126,44 +127,10 @@ export default async function ProductoPage({
           <div className="grid gap-8 lg:grid-cols-12">
             <div className="lg:col-span-7">
               {productImages.length ? (
-                <div className="overflow-hidden border border-zinc-200 bg-white">
-                  <div className="border-b border-zinc-200 px-6 py-4">
-                    <div className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">
-                      Galería
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="relative aspect-[16/10] overflow-hidden rounded-[1.5rem] bg-zinc-100">
-                      <Image
-                        src={productImages[0]}
-                        alt={`${product.name} portada`}
-                        fill
-                        unoptimized={productImages[0].startsWith("data:")}
-                        className="object-cover"
-                        sizes="(min-width: 1024px) 60vw, 100vw"
-                      />
-                    </div>
-                    {productImages.length > 1 ? (
-                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                        {productImages.slice(1).map((imageUrl, index) => (
-                          <div key={`${imageUrl.slice(0, 40)}-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-[1rem] bg-zinc-100">
-                            <Image
-                              src={imageUrl}
-                              alt={`${product.name} foto ${index + 2}`}
-                              fill
-                              unoptimized={imageUrl.startsWith("data:")}
-                              className="object-cover"
-                              sizes="(min-width: 640px) 33vw, 100vw"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
+                <ProductGallery name={product.name} images={productImages} />
               ) : null}
 
-              <div className="overflow-hidden border border-zinc-200 bg-white">
+              <div className="mt-6 overflow-hidden border border-zinc-200 bg-white">
                 <div className="border-b border-zinc-200 px-6 py-4">
                   <div className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">
                     Descripción
