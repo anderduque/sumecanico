@@ -185,46 +185,49 @@ export default async function TiendaPage({
                   </div>
 
                   <div className="flex flex-1 flex-col p-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <h2 className="text-2xl font-semibold tracking-tight text-white">
-                          {product.name}
-                        </h2>
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <span className="border border-white/12 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
-                            {product.category}
-                          </span>
-                          {product.shockPosition ? (
-                            <span className="border border-white/12 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
-                              {product.shockPosition}
-                            </span>
-                          ) : null}
-                          <span
-                            className={[
-                              "px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
-                              product.stockStatus === "in_stock"
-                                ? "bg-emerald-900/40 text-emerald-300"
-                                : "bg-amber-900/40 text-amber-300",
-                            ].join(" ")}
-                          >
-                            {product.stockStatus === "in_stock" ? "En stock" : "Bajo pedido"}
-                          </span>
+                    <div className="flex min-h-[12rem] flex-col gap-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <h2 className="text-2xl font-semibold tracking-tight text-white">
+                            {product.name}
+                          </h2>
+                        </div>
+
+                        <div className="shrink-0 text-right">
+                          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                            {isConsultOnly ? "Estado" : "Precio"}
+                          </div>
+                          {isConsultOnly ? (
+                            <div className="mt-1 max-w-[10rem] text-right text-sm font-semibold uppercase leading-5 tracking-[0.08em] text-amber-300">
+                              Consultar disponibilidad
+                            </div>
+                          ) : (
+                            <div className="mt-1 text-xl font-semibold text-white">
+                              {formatMoney(product.priceCents, { currency: product.currency })}
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="shrink-0 text-right">
-                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                          {isConsultOnly ? "Estado" : "Precio"}
-                        </div>
-                        {isConsultOnly ? (
-                          <div className="mt-1 text-sm font-semibold uppercase tracking-[0.12em] text-amber-300">
-                            Consultar disponibilidad
-                          </div>
-                        ) : (
-                          <div className="mt-1 text-xl font-semibold text-white">
-                            {formatMoney(product.priceCents, { currency: product.currency })}
-                          </div>
-                        )}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="max-w-full break-words border border-white/12 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
+                          {product.category}
+                        </span>
+                        {product.shockPosition ? (
+                          <span className="max-w-full break-words border border-white/12 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
+                            {product.shockPosition}
+                          </span>
+                        ) : null}
+                        <span
+                          className={[
+                            "max-w-full break-words px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
+                            product.stockStatus === "in_stock"
+                              ? "bg-emerald-900/40 text-emerald-300"
+                              : "bg-amber-900/40 text-amber-300",
+                          ].join(" ")}
+                        >
+                          {product.stockStatus === "in_stock" ? "En stock" : "Bajo pedido"}
+                        </span>
                       </div>
                     </div>
 

@@ -1506,8 +1506,9 @@ export function AdminClient() {
                 Repuestos
               </div>
               <div className="mt-2 text-sm text-zinc-600">
-                {products.length} producto{products.length === 1 ? "" : "s"} cargado
-                {products.length === 1 ? "" : "s"} en el catálogo.
+                {state === "loading"
+                  ? "Cargando catálogo de repuestos..."
+                  : `${products.length} producto${products.length === 1 ? "" : "s"} cargado${products.length === 1 ? "" : "s"} en el catálogo.`}
               </div>
             </div>
             <button
@@ -1519,7 +1520,36 @@ export function AdminClient() {
             </button>
           </div>
 
-          {products.length > 0 ? (
+          {state === "loading" ? (
+            <div className="border-b border-amber-200 bg-amber-50 px-6 py-4">
+              <div className="flex items-center gap-3 text-sm font-semibold text-amber-900">
+                <SpinnerIcon className="h-5 w-5 animate-spin" />
+                <div>
+                  Cargando repuestos...
+                  <span className="ml-2 font-medium text-amber-800/80">
+                    El sistema est&aacute; trayendo la informaci&oacute;n del cat&aacute;logo.
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {state === "loading" && products.length === 0 ? (
+            <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="overflow-hidden border border-zinc-200 bg-white p-5">
+                  <div className="aspect-[16/10] animate-pulse bg-zinc-100" />
+                  <div className="mt-5 h-7 w-3/4 animate-pulse bg-zinc-100" />
+                  <div className="mt-4 flex gap-2">
+                    <div className="h-6 w-28 animate-pulse bg-zinc-100" />
+                    <div className="h-6 w-20 animate-pulse bg-zinc-100" />
+                  </div>
+                  <div className="mt-6 h-4 w-full animate-pulse bg-zinc-100" />
+                  <div className="mt-3 h-4 w-5/6 animate-pulse bg-zinc-100" />
+                </div>
+              ))}
+            </div>
+          ) : products.length > 0 ? (
             <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
               {products.map((p) => (
                 <button
@@ -2400,24 +2430,15 @@ export function AdminClient() {
             aria-hidden="true"
           />
           <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl lg:max-w-2xl">
-            {state === "loading" ? (
-              <div className="border-b border-amber-200 bg-amber-50 px-5 py-3">
-                <div className="flex items-center gap-3 text-sm font-semibold text-amber-900">
-                  <SpinnerIcon className="h-5 w-5 animate-spin" />
-                  <div>
-                    {isEditingExisting ? "Guardando cambios..." : "Guardando repuesto..."}
-                    <span className="ml-2 font-medium text-amber-800/80">
-                      {isEditingExisting
-                        ? "El sistema est&aacute; actualizando el repuesto."
-                        : "El sistema est&aacute; procesando el repuesto."}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : null}
             <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
               <div className="text-sm font-semibold text-zinc-950">
-                {isEditingExisting ? "Editar repuesto" : "Crear repuesto"}
+                {state === "loading"
+                  ? isEditingExisting
+                    ? "Guardando cambios"
+                    : "Guardando repuesto"
+                  : isEditingExisting
+                    ? "Editar repuesto"
+                    : "Crear repuesto"}
               </div>
               <button
                 type="button"
@@ -2427,7 +2448,24 @@ export function AdminClient() {
                 Cerrar
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="relative flex-1 overflow-y-auto p-5">
+                  {state === "loading" ? (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/78 backdrop-blur-[2px]">
+                      <div className="mx-4 w-full max-w-sm rounded-2xl border border-zinc-200 bg-white px-6 py-7 text-center shadow-[0_25px_80px_-35px_rgba(0,0,0,0.35)]">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                          <SpinnerIcon className="h-7 w-7 animate-spin" />
+                        </div>
+                        <div className="mt-4 text-lg font-semibold text-zinc-950">
+                          {isEditingExisting ? "Guardando cambios" : "Guardando repuesto"}
+                        </div>
+                        <div className="mt-2 text-sm leading-6 text-zinc-600">
+                          {isEditingExisting
+                            ? "Estamos actualizando la informaci&oacute;n del repuesto."
+                            : "Estamos procesando y guardando el nuevo repuesto."}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="grid gap-3">
                     <div className="grid gap-2">
                       <label className="text-sm font-semibold text-zinc-900" htmlFor="name">
