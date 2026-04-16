@@ -133,6 +133,7 @@ function validateAdminPassword(value: string) {
 
 const productCategoryOptions = [
   "Frenos",
+  "Amortiguadores",
   "Motor",
   "Encendido",
   "Mantenimiento",
