@@ -285,20 +285,14 @@ export default async function TiendaPage({
                           </h2>
                         </div>
 
-                        <div className="shrink-0 text-right">
-                          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                            {isConsultOnly ? "Estado" : "Precio"}
-                          </div>
-                          {isConsultOnly ? (
-                            <div className="mt-1 max-w-[10rem] text-right text-sm font-semibold uppercase leading-5 tracking-[0.08em] text-amber-300">
-                              Consultar disponibilidad
-                            </div>
-                          ) : (
+                        {!isConsultOnly ? (
+                          <div className="shrink-0 text-right">
+                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Precio</div>
                             <div className="mt-1 text-xl font-semibold text-white">
                               {formatMoney(product.priceCents, { currency: product.currency })}
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
@@ -326,6 +320,16 @@ export default async function TiendaPage({
                     <p className="mt-5 flex-1 text-justify text-sm leading-8 text-zinc-300">{product.summary}</p>
 
                     <div className="mt-6 grid gap-3">
+                      {isConsultOnly ? (
+                        <div className="rounded-[1rem] border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-center">
+                          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200/80">
+                            Estado
+                          </div>
+                          <div className="mt-1 text-sm font-semibold uppercase tracking-[0.12em] text-amber-200">
+                            Consultar disponibilidad
+                          </div>
+                        </div>
+                      ) : null}
                       <Link
                         href={`/tienda/${encodeURIComponent(product.slug)}`}
                         className="inline-flex w-full items-center justify-center rounded-[1rem] border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
