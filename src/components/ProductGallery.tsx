@@ -1,75 +1,31 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 type ProductGalleryProps = {
   name: string;
   images: string[];
 };
 
-function ChevronLeftIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 18 9 12l6-6" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-
 export function ProductGallery({ name, images }: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const thumbRailRef = useRef<HTMLDivElement | null>(null);
   const selectedImage = images[selectedIndex] ?? images[0] ?? "";
 
   if (!selectedImage) return null;
 
-  function scrollThumbs(direction: -1 | 1) {
-    const node = thumbRailRef.current;
-    if (!node) return;
-    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
-    const amount = isDesktop ? 220 : 180;
-    if (isDesktop) {
-      node.scrollBy({ top: direction * amount, behavior: "smooth" });
-      return;
-    }
-    node.scrollBy({ left: direction * amount, behavior: "smooth" });
-  }
-
   return (
     <div className="overflow-hidden border border-zinc-200 bg-white">
-      <div className="border-b border-zinc-200 px-6 py-4">
+      <div className="border-b border-zinc-200 px-4 py-3 sm:px-6 sm:py-4">
         <div className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">Galería</div>
       </div>
 
-      <div className="p-4 sm:p-6">
-        <div className="grid gap-4 lg:grid-cols-[96px_minmax(0,1fr)] lg:items-stretch">
+      <div className="p-3 sm:p-6">
+        <div className="grid gap-3 lg:grid-cols-[88px_minmax(0,1fr)] lg:items-stretch lg:gap-4">
           {images.length > 1 ? (
             <div className="order-2 lg:order-1">
-              <div className="flex items-center gap-3 lg:h-full lg:flex-col">
-                <button
-                  type="button"
-                  aria-label="Ver miniaturas anteriores"
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition hover:border-primary hover:text-primary"
-                  onClick={() => scrollThumbs(-1)}
-                >
-                  <ChevronLeftIcon className="h-5 w-5 lg:hidden" />
-                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" className="hidden h-5 w-5 lg:block">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 15 12 9l-6 6" />
-                  </svg>
-                </button>
-
-                <div
-                  ref={thumbRailRef}
-                  className="flex min-w-0 flex-1 snap-x gap-3 overflow-x-auto rounded-[1.5rem] border border-zinc-200 bg-[#f7f4ef] p-3 lg:h-[38rem] lg:snap-y lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden"
-                >
+              <div className="rounded-[1.15rem] border border-zinc-200 bg-[#f7f4ef] p-2 sm:rounded-[1.5rem] sm:p-3">
+                <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-1 lg:overflow-visible lg:pb-0">
                   {images.map((imageUrl, index) => {
                     const isActive = index === selectedIndex;
                     return (
@@ -80,7 +36,7 @@ export function ProductGallery({ name, images }: ProductGalleryProps) {
                         aria-pressed={isActive}
                         onClick={() => setSelectedIndex(index)}
                         className={[
-                          "relative h-24 w-24 shrink-0 snap-start overflow-hidden rounded-[1rem] border bg-white transition lg:w-full",
+                          "relative h-16 w-16 shrink-0 overflow-hidden rounded-[0.8rem] border bg-white transition sm:h-18 sm:w-18 lg:h-auto lg:w-full lg:aspect-square lg:rounded-[0.9rem]",
                           isActive
                             ? "border-zinc-950 shadow-[0_14px_34px_-22px_rgba(0,0,0,0.55)]"
                             : "border-zinc-200 opacity-75 hover:border-primary hover:opacity-100",
@@ -92,30 +48,18 @@ export function ProductGallery({ name, images }: ProductGalleryProps) {
                           fill
                           unoptimized={imageUrl.startsWith("data:")}
                           className="object-cover"
-                          sizes="96px"
+                          sizes="(min-width: 1024px) 72px, 64px"
                         />
                       </button>
                     );
                   })}
                 </div>
-
-                <button
-                  type="button"
-                  aria-label="Ver miniaturas siguientes"
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition hover:border-primary hover:text-primary"
-                  onClick={() => scrollThumbs(1)}
-                >
-                  <ChevronRightIcon className="h-5 w-5 lg:hidden" />
-                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" className="hidden h-5 w-5 lg:block">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
-                  </svg>
-                </button>
               </div>
             </div>
           ) : null}
 
           <div className="order-1 lg:order-2">
-            <div className="relative aspect-[4/4.2] overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white sm:aspect-[4/3.8] lg:h-[38rem] lg:aspect-auto">
+            <div className="relative aspect-[1/1.08] overflow-hidden rounded-[1.15rem] border border-zinc-200 bg-white sm:aspect-[4/3.8] sm:rounded-[1.75rem] lg:h-[38rem] lg:aspect-auto">
               <Image
                 key={selectedImage}
                 src={selectedImage}
@@ -123,7 +67,7 @@ export function ProductGallery({ name, images }: ProductGalleryProps) {
                 fill
                 priority={selectedIndex === 0}
                 unoptimized={selectedImage.startsWith("data:")}
-                className="object-contain p-4 sm:p-6"
+                className="object-contain p-3 sm:p-6"
                 sizes="(min-width: 1024px) 42rem, 100vw"
               />
             </div>
