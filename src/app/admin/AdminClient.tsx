@@ -1547,41 +1547,49 @@ export function AdminClient() {
                   </div>
 
                   <div className="flex flex-1 flex-col p-5">
-                    <div className="flex min-h-[9.5rem] items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="min-h-[4.5rem] text-xl font-semibold tracking-tight text-zinc-950">
-                          {p.name}
+                    <div className="flex min-h-[10.5rem] flex-col gap-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xl font-semibold tracking-tight text-zinc-950">
+                            {p.name}
+                          </div>
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <span className="border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700">
-                            {p.category || "Sin categoría"}
-                          </span>
-                          <span
-                            className={[
-                              "px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
-                              p.stockStatus === "in_stock"
-                                ? "bg-emerald-50 text-emerald-800"
-                                : "bg-amber-50 text-amber-800",
-                            ].join(" ")}
-                          >
-                            {p.stockStatus === "in_stock" ? "En stock" : "Bajo pedido"}
-                          </span>
+
+                        <div className="shrink-0 text-right">
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                            {p.pricingMode === "check_availability" ? "Estado" : "Precio"}
+                          </div>
+                          {p.pricingMode === "check_availability" ? (
+                            <div className="mt-1 max-w-[10rem] text-right text-sm font-semibold uppercase leading-5 tracking-[0.08em] text-amber-700">
+                              Consultar disponibilidad
+                            </div>
+                          ) : (
+                            <div className="mt-1 text-lg font-semibold text-zinc-950">
+                              {formatMoney(p.priceCents, { currency: p.currency })}
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="shrink-0 text-right">
-                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                          {p.pricingMode === "check_availability" ? "Estado" : "Precio"}
-                        </div>
-                        {p.pricingMode === "check_availability" ? (
-                          <div className="mt-1 text-sm font-semibold uppercase tracking-[0.12em] text-amber-700">
-                            Consultar disponibilidad
-                          </div>
-                        ) : (
-                          <div className="mt-1 text-lg font-semibold text-zinc-950">
-                            {formatMoney(p.priceCents, { currency: p.currency })}
-                          </div>
-                        )}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="max-w-full break-words border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                          {p.category || "Sin categoría"}
+                        </span>
+                        {p.shockPosition ? (
+                          <span className="max-w-full break-words border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                            {p.shockPosition}
+                          </span>
+                        ) : null}
+                        <span
+                          className={[
+                            "max-w-full break-words px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
+                            p.stockStatus === "in_stock"
+                              ? "bg-emerald-50 text-emerald-800"
+                              : "bg-amber-50 text-amber-800",
+                          ].join(" ")}
+                        >
+                          {p.stockStatus === "in_stock" ? "En stock" : "Bajo pedido"}
+                        </span>
                       </div>
                     </div>
 
@@ -2397,9 +2405,11 @@ export function AdminClient() {
                 <div className="flex items-center gap-3 text-sm font-semibold text-amber-900">
                   <SpinnerIcon className="h-5 w-5 animate-spin" />
                   <div>
-                    Guardando cambios...
+                    {isEditingExisting ? "Guardando cambios..." : "Guardando repuesto..."}
                     <span className="ml-2 font-medium text-amber-800/80">
-                      El sistema est&aacute; procesando el repuesto.
+                      {isEditingExisting
+                        ? "El sistema est&aacute; actualizando el repuesto."
+                        : "El sistema est&aacute; procesando el repuesto."}
                     </span>
                   </div>
                 </div>
@@ -2980,7 +2990,7 @@ export function AdminClient() {
                     className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:brightness-90"
                     disabled={state === "loading"}
                   >
-                    Guardar
+                    {state === "loading" ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
               </div>
