@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/Container";
 import { ProductDetailActions } from "@/components/ProductDetailActions";
 import { formatMoney } from "@/lib/money";
+import { getProductCoverImage, getProductImageUrls } from "@/lib/productTypes";
 import { getProductBySlug } from "@/lib/productsStore";
 
 export const runtime = "nodejs";
@@ -58,15 +59,17 @@ export default async function ProductoPage({
     },
   ];
   const description = buildDescription(product.summary, product.category);
+  const productImages = getProductImageUrls(product);
+  const coverImage = getProductCoverImage(product);
 
   return (
     <div className="bg-[#f6f3ef] text-zinc-950">
       <section className="relative isolate overflow-hidden bg-zinc-950 text-white">
         <div className="absolute inset-0">
-          {product.imageUrl ? (
-            product.imageUrl.startsWith("data:") ? (
+          {coverImage ? (
+            coverImage.startsWith("data:") ? (
               <Image
-                src={product.imageUrl}
+                src={coverImage}
                 alt={product.name}
                 fill
                 unoptimized
@@ -75,7 +78,7 @@ export default async function ProductoPage({
                 priority
               />
             ) : (
-              <Image src={product.imageUrl} alt={product.name} fill className="object-cover" sizes="100vw" priority />
+              <Image src={coverImage} alt={product.name} fill className="object-cover" sizes="100vw" priority />
             )
           ) : (
             <Image src="/module-store-hero.png" alt={product.name} fill className="object-cover" sizes="100vw" priority />
@@ -122,6 +125,44 @@ export default async function ProductoPage({
         <Container className="py-14 sm:py-16">
           <div className="grid gap-8 lg:grid-cols-12">
             <div className="lg:col-span-7">
+              {productImages.length ? (
+                <div className="overflow-hidden border border-zinc-200 bg-white">
+                  <div className="border-b border-zinc-200 px-6 py-4">
+                    <div className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">
+                      Galería
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <div className="relative aspect-[16/10] overflow-hidden rounded-[1.5rem] bg-zinc-100">
+                      <Image
+                        src={productImages[0]}
+                        alt={`${product.name} portada`}
+                        fill
+                        unoptimized={productImages[0].startsWith("data:")}
+                        className="object-cover"
+                        sizes="(min-width: 1024px) 60vw, 100vw"
+                      />
+                    </div>
+                    {productImages.length > 1 ? (
+                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                        {productImages.slice(1).map((imageUrl, index) => (
+                          <div key={`${imageUrl.slice(0, 40)}-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-[1rem] bg-zinc-100">
+                            <Image
+                              src={imageUrl}
+                              alt={`${product.name} foto ${index + 2}`}
+                              fill
+                              unoptimized={imageUrl.startsWith("data:")}
+                              className="object-cover"
+                              sizes="(min-width: 640px) 33vw, 100vw"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
               <div className="overflow-hidden border border-zinc-200 bg-white">
                 <div className="border-b border-zinc-200 px-6 py-4">
                   <div className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950">

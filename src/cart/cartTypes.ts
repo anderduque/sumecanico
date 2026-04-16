@@ -4,6 +4,7 @@ export type CartProductSnapshot = {
   summary: string;
   category: string;
   imageUrl?: string;
+  imageUrls?: string[];
   priceCents: number;
   currency: string;
   stockStatus: "in_stock" | "on_request";

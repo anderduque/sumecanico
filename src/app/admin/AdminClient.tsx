@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Container } from "@/components/Container";
-import type { Product } from "@/lib/productTypes";
+import { getProductCoverImage, getProductImageUrls, type Product } from "@/lib/productTypes";
 import type { PaymentMethod } from "@/lib/paymentMethodsStore";
 import { formatMoney } from "@/lib/money";
 import { site } from "@/lib/site";
@@ -92,6 +92,7 @@ function emptyProduct(): Product {
     summary: "",
     category: "",
     imageUrl: "",
+    imageUrls: [],
     priceCents: 0,
     currency: "USD",
     stockStatus: "on_request",
@@ -111,6 +112,15 @@ function parseCompatibleWith(text: string) {
 
 function compatibleWithToText(list: string[] | undefined) {
   return list?.join(", ") ?? "";
+}
+
+function withNormalizedProductImages(product: Product): Product {
+  const imageUrls = getProductImageUrls(product);
+  return {
+    ...product,
+    imageUrl: imageUrls[0] ?? "",
+    imageUrls,
+  };
 }
 
 function slugify(input: string) {
@@ -496,6 +506,7 @@ export function AdminClient() {
     return !!draft.slug && products.some((p) => p.slug === draft.slug);
   }, [draft.slug, products]);
   const shouldTrackInventory = draft.stockStatus === "in_stock";
+  const draftImageUrls = useMemo(() => getProductImageUrls(draft), [draft]);
   const compatModelOptions = useMemo(() => {
     if (!compatBrand || !compatBodyStyle) return [];
     const models = vehicleModelsByBrandAndBodyStyle[compatBrand]?.[compatBodyStyle] ?? [];
@@ -713,7 +724,7 @@ export function AdminClient() {
         return false;
       }
       const data = (await res.json()) as unknown;
-      const list = Array.isArray(data) ? (data as Product[]) : [];
+      const list = Array.isArray(data) ? (data as Product[]).map(withNormalizedProductImages) : [];
       setProducts(list);
       setState("ready");
       bumpActivity();
@@ -831,16 +842,20 @@ export function AdminClient() {
   }, [authHeader]);
 
   function selectProduct(p: Product) {
+    const normalized = withNormalizedProductImages(p);
     const normalizedInventory =
-      p.stockStatus === "in_stock" && typeof p.inventoryQty === "number" ? p.inventoryQty : undefined;
+      normalized.stockStatus === "in_stock" && typeof normalized.inventoryQty === "number"
+        ? normalized.inventoryQty
+        : undefined;
     setDraft({
-      ...p,
-      imageUrl: p.imageUrl ?? "",
+      ...normalized,
+      imageUrl: normalized.imageUrl ?? "",
+      imageUrls: normalized.imageUrls ?? [],
       inventoryQty: normalizedInventory,
-      compatibleWith: p.compatibleWith ?? [],
-      specs: p.specs ?? [],
+      compatibleWith: normalized.compatibleWith ?? [],
+      specs: normalized.specs ?? [],
     });
-    setCompatibleWithText(compatibleWithToText(p.compatibleWith));
+    setCompatibleWithText(compatibleWithToText(normalized.compatibleWith));
     setCompatBrand("");
     setCompatBodyStyle("");
     setCompatModel("");
@@ -894,10 +909,11 @@ export function AdminClient() {
       setError("La descripción corta es requerida.");
       return;
     }
-    const imageUrl = draft.imageUrl?.trim() ? draft.imageUrl.trim() : "";
+    const imageUrls = getProductImageUrls(draft);
+    const imageUrl = imageUrls[0] ?? "";
     if (!imageUrl) {
       setState("error");
-      setError("La imagen es requerida.");
+      setError("Debes cargar al menos una imagen.");
       return;
     }
     if (!Number.isFinite(draft.priceCents) || draft.priceCents <= 0) {
@@ -935,6 +951,7 @@ export function AdminClient() {
       category,
       currency: draft.currency.trim().toUpperCase(),
       imageUrl,
+      imageUrls,
       compatibleWith: parseCompatibleWith(compatibleWithText),
       inventoryQty:
         shouldTrackInventory && typeof draft.inventoryQty === "number"
@@ -1026,6 +1043,33 @@ export function AdminClient() {
       setState("error");
       setError("No se pudo eliminar el producto.");
     }
+  }
+
+  function moveDraftImage(index: number, direction: -1 | 1) {
+    setDraft((current) => {
+      const imageUrls = getProductImageUrls(current);
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= imageUrls.length) return current;
+      const nextImageUrls = [...imageUrls];
+      const [item] = nextImageUrls.splice(index, 1);
+      nextImageUrls.splice(targetIndex, 0, item);
+      return {
+        ...current,
+        imageUrl: nextImageUrls[0] ?? "",
+        imageUrls: nextImageUrls,
+      };
+    });
+  }
+
+  function removeDraftImage(index: number) {
+    setDraft((current) => {
+      const nextImageUrls = getProductImageUrls(current).filter((_, itemIndex) => itemIndex !== index);
+      return {
+        ...current,
+        imageUrl: nextImageUrls[0] ?? "",
+        imageUrls: nextImageUrls,
+      };
+    });
   }
 
   async function login() {
@@ -1463,9 +1507,9 @@ export function AdminClient() {
                   className="group flex h-full flex-col overflow-hidden border border-zinc-200 bg-white text-left transition hover:border-primary/60 hover:shadow-[0_20px_50px_-30px_rgba(0,0,0,0.25)]"
                 >
                   <div className="relative aspect-[16/10] overflow-hidden bg-zinc-50">
-                    {p.imageUrl ? (
+                    {getProductCoverImage(p) ? (
                       <Image
-                        src={p.imageUrl}
+                        src={getProductCoverImage(p)!}
                         alt={p.name}
                         fill
                         unoptimized
@@ -2370,13 +2414,13 @@ export function AdminClient() {
 
                     <div className="grid gap-2">
                       <label className="text-sm font-semibold text-zinc-900" htmlFor="imageFile">
-                        Imagen*
+                        Fotos*
                       </label>
                       <div className="relative h-44 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
-                        {draft.imageUrl ? (
+                        {draftImageUrls[0] ? (
                           <Image
-                            src={draft.imageUrl}
-                            alt={draft.name || "Imagen del repuesto"}
+                            src={draftImageUrls[0]}
+                            alt={draft.name || "Portada del repuesto"}
                             fill
                             unoptimized
                             className="object-cover"
@@ -2393,15 +2437,15 @@ export function AdminClient() {
                             htmlFor="imageFile"
                             className="cursor-pointer rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50"
                           >
-                            Seleccionar archivo
+                            Agregar fotos
                           </label>
-                          {draft.imageUrl ? (
+                          {draftImageUrls.length ? (
                             <button
                               type="button"
                               className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
-                              onClick={() => setDraft((p) => ({ ...p, imageUrl: "" }))}
+                              onClick={() => setDraft((p) => ({ ...p, imageUrl: "", imageUrls: [] }))}
                             >
-                              Quitar
+                              Quitar todas
                             </button>
                           ) : null}
                         </div>
@@ -2410,16 +2454,25 @@ export function AdminClient() {
                         id="imageFile"
                         type="file"
                         accept="image/*"
-                        required={!draft.imageUrl}
+                        multiple
+                        required={draftImageUrls.length === 0}
                         className="hidden"
                         onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
+                          const files = Array.from(e.target.files ?? []);
+                          e.currentTarget.value = "";
+                          if (!files.length) return;
                           setState("loading");
                           setError(null);
-                          void fileToOptimizedJpegDataUrl(file)
-                            .then((dataUrl) => {
-                              setDraft((p) => ({ ...p, imageUrl: dataUrl }));
+                          void Promise.all(files.map((file) => fileToOptimizedJpegDataUrl(file)))
+                            .then((dataUrls) => {
+                              setDraft((p) => {
+                                const nextImageUrls = [...getProductImageUrls(p), ...dataUrls];
+                                return {
+                                  ...p,
+                                  imageUrl: nextImageUrls[0] ?? "",
+                                  imageUrls: nextImageUrls,
+                                };
+                              });
                               setState("ready");
                             })
                             .catch((err: unknown) => {
@@ -2428,8 +2481,55 @@ export function AdminClient() {
                             });
                         }}
                       />
+                      {draftImageUrls.length ? (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {draftImageUrls.map((imageUrl, index) => (
+                            <div key={`${imageUrl.slice(0, 40)}-${index}`} className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+                              <div className="relative aspect-[4/3] bg-zinc-50">
+                                <Image
+                                  src={imageUrl}
+                                  alt={draft.name ? `${draft.name} foto ${index + 1}` : `Foto ${index + 1}`}
+                                  fill
+                                  unoptimized
+                                  className="object-cover"
+                                  sizes="(min-width: 640px) 50vw, 100vw"
+                                />
+                                <div className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
+                                  {index === 0 ? "Portada" : `Foto ${index + 1}`}
+                                </div>
+                              </div>
+                              <div className="grid gap-2 p-3 sm:grid-cols-3">
+                                <button
+                                  type="button"
+                                  disabled={index === 0}
+                                  className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+                                  onClick={() => moveDraftImage(index, -1)}
+                                >
+                                  Subir
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={index === draftImageUrls.length - 1}
+                                  className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+                                  onClick={() => moveDraftImage(index, 1)}
+                                >
+                                  Bajar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-900 hover:bg-rose-100"
+                                  onClick={() => removeDraftImage(index)}
+                                >
+                                  Quitar
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
                       <div className="text-xs text-zinc-600">
-                        Máximo 2MB · Se optimiza automáticamente (hasta {maxUploadImageDimension}px).
+                        Puedes cargar varias fotos. La primera será la portada y puedes reordenarlas.
+                        Máximo 2MB por imagen · Se optimizan automáticamente (hasta {maxUploadImageDimension}px).
                       </div>
                     </div>
 

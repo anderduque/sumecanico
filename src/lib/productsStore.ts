@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidateTag, unstable_cache } from "next/cache";
-import type { Product } from "@/lib/productTypes";
+import { getProductCoverImage, getProductImageUrls, type Product } from "@/lib/productTypes";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 
@@ -15,6 +15,12 @@ function isProduct(x: unknown): x is Product {
   if (typeof p.summary !== "string") return false;
   if (typeof p.category !== "string") return false;
   if (p.imageUrl !== undefined && typeof p.imageUrl !== "string") return false;
+  if (p.imageUrls !== undefined) {
+    if (!Array.isArray(p.imageUrls)) return false;
+    for (const item of p.imageUrls) {
+      if (typeof item !== "string") return false;
+    }
+  }
   if (typeof p.priceCents !== "number" || !Number.isFinite(p.priceCents)) return false;
   if (typeof p.currency !== "string" || p.currency.trim() === "") return false;
   if (p.stockStatus !== "in_stock" && p.stockStatus !== "on_request") return false;
@@ -92,6 +98,25 @@ async function getProductsUncached(): Promise<Product[]> {
   return list;
 }
 
+function normalizeProduct(product: Product): Product {
+  const imageUrls = getProductImageUrls(product);
+  return {
+    ...product,
+    slug: product.slug.trim(),
+    name: product.name.trim(),
+    category: product.category.trim(),
+    currency: product.currency.trim().toUpperCase(),
+    imageUrl: getProductCoverImage({ imageUrl: product.imageUrl, imageUrls }),
+    imageUrls: imageUrls.length ? imageUrls : undefined,
+    inventoryQty:
+      typeof product.inventoryQty === "number" ? Math.max(0, Math.trunc(product.inventoryQty)) : undefined,
+    specs:
+      product.specs
+        ?.map((s) => ({ label: s.label.trim(), value: s.value.trim() }))
+        .filter((s) => s.label && s.value) ?? undefined,
+  };
+}
+
 export const getProducts = unstable_cache(getProductsUncached, ["products"], {
   revalidate: 60,
   tags: ["products"],
@@ -125,21 +150,7 @@ export const getProductBySlug = unstable_cache(getProductBySlugUncached, ["produ
 });
 
 export async function saveProducts(nextProducts: Product[]) {
-  const normalized = nextProducts
-    .filter((p) => isProduct(p))
-    .map((p) => ({
-      ...p,
-      slug: p.slug.trim(),
-      name: p.name.trim(),
-      category: p.category.trim(),
-      currency: p.currency.trim().toUpperCase(),
-      imageUrl: p.imageUrl?.trim() ? p.imageUrl.trim() : undefined,
-      inventoryQty:
-        typeof p.inventoryQty === "number" ? Math.max(0, Math.trunc(p.inventoryQty)) : undefined,
-      specs:
-        p.specs?.map((s) => ({ label: s.label.trim(), value: s.value.trim() })).filter((s) => s.label && s.value) ??
-        undefined,
-    }));
+  const normalized = nextProducts.filter((p) => isProduct(p)).map(normalizeProduct);
 
   const bySlug = new Map<string, Product>();
   for (const p of normalized) bySlug.set(p.slug, p);
@@ -175,19 +186,7 @@ export async function saveProducts(nextProducts: Product[]) {
 
 export async function upsertProduct(next: Product) {
   if (!isProduct(next)) return;
-  const product: Product = {
-    ...next,
-    slug: next.slug.trim(),
-    name: next.name.trim(),
-    category: next.category.trim(),
-    currency: next.currency.trim().toUpperCase(),
-    imageUrl: next.imageUrl?.trim() ? next.imageUrl.trim() : undefined,
-    inventoryQty:
-      typeof next.inventoryQty === "number" ? Math.max(0, Math.trunc(next.inventoryQty)) : undefined,
-    specs:
-      next.specs?.map((s) => ({ label: s.label.trim(), value: s.value.trim() })).filter((s) => s.label && s.value) ??
-      undefined,
-  };
+  const product = normalizeProduct(next);
 
   const db = getFirestoreDb();
   if (db) {

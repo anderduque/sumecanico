@@ -18,6 +18,12 @@ function isProductPayload(x: unknown): x is Product {
   if (typeof p.summary !== "string") return false;
   if (typeof p.category !== "string") return false;
   if (p.imageUrl !== undefined && typeof p.imageUrl !== "string") return false;
+  if (p.imageUrls !== undefined) {
+    if (!Array.isArray(p.imageUrls)) return false;
+    for (const item of p.imageUrls) {
+      if (typeof item !== "string") return false;
+    }
+  }
   if (typeof p.priceCents !== "number" || !Number.isFinite(p.priceCents)) return false;
   if (typeof p.currency !== "string" || p.currency.trim() === "") return false;
   if (p.stockStatus !== "in_stock" && p.stockStatus !== "on_request") return false;

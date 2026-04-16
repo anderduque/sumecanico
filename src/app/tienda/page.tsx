@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { Container } from "@/components/Container";
 import { formatMoney } from "@/lib/money";
+import { getProductCoverImage } from "@/lib/productTypes";
 import { getProducts } from "@/lib/productsStore";
 
 export const metadata: Metadata = {
@@ -147,90 +148,93 @@ export default async function TiendaPage({
           ) : null}
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {visibleProducts.map((product) => (
-              <article
-                key={product.slug}
-                className="group flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#1a1a1a]/95 transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_30px_70px_-40px_rgba(0,0,0,0.8)]"
-              >
-                <div className="relative aspect-[16/10] overflow-hidden bg-zinc-900">
-                  {product.imageUrl ? (
-                    product.imageUrl.startsWith("data:") ? (
-                      <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        fill
-                        unoptimized
-                        className="object-cover transition duration-500 group-hover:scale-[1.03]"
-                        sizes="(min-width: 1280px) 360px, (min-width: 768px) 45vw, 100vw"
-                      />
+            {visibleProducts.map((product) => {
+              const coverImage = getProductCoverImage(product);
+              return (
+                <article
+                  key={product.slug}
+                  className="group flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#1a1a1a]/95 transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_30px_70px_-40px_rgba(0,0,0,0.8)]"
+                >
+                  <div className="relative aspect-[16/10] overflow-hidden bg-zinc-900">
+                    {coverImage ? (
+                      coverImage.startsWith("data:") ? (
+                        <Image
+                          src={coverImage}
+                          alt={product.name}
+                          fill
+                          unoptimized
+                          className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                          sizes="(min-width: 1280px) 360px, (min-width: 768px) 45vw, 100vw"
+                        />
+                      ) : (
+                        <Image
+                          src={coverImage}
+                          alt={product.name}
+                          fill
+                          className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                          sizes="(min-width: 1280px) 360px, (min-width: 768px) 45vw, 100vw"
+                        />
+                      )
                     ) : (
-                      <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        fill
-                        className="object-cover transition duration-500 group-hover:scale-[1.03]"
-                        sizes="(min-width: 1280px) 360px, (min-width: 768px) 45vw, 100vw"
+                      <div className="grid h-full w-full place-items-center text-sm font-semibold text-zinc-500">
+                        Sin imagen
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.05)_0%,rgba(0,0,0,0.22)_54%,rgba(0,0,0,0.82)_100%)]" />
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <h2 className="text-2xl font-semibold tracking-tight text-white">
+                          {product.name}
+                        </h2>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <span className="border border-white/12 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
+                            {product.category}
+                          </span>
+                          <span
+                            className={[
+                              "px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
+                              product.stockStatus === "in_stock"
+                                ? "bg-emerald-900/40 text-emerald-300"
+                                : "bg-amber-900/40 text-amber-300",
+                            ].join(" ")}
+                          >
+                            {product.stockStatus === "in_stock" ? "En stock" : "Bajo pedido"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                          Precio
+                        </div>
+                        <div className="mt-1 text-xl font-semibold text-white">
+                          {formatMoney(product.priceCents, { currency: product.currency })}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="mt-5 flex-1 text-justify text-sm leading-8 text-zinc-300">{product.summary}</p>
+
+                    <div className="mt-6 grid gap-3">
+                      <Link
+                        href={`/tienda/${encodeURIComponent(product.slug)}`}
+                        className="inline-flex w-full items-center justify-center rounded-[1rem] border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
+                      >
+                        Ver detalles →
+                      </Link>
+                      <AddToCartButton
+                        productSlug={product.slug}
+                        product={product}
+                        className="w-full rounded-[1rem]"
                       />
-                    )
-                  ) : (
-                    <div className="grid h-full w-full place-items-center text-sm font-semibold text-zinc-500">
-                      Sin imagen
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.05)_0%,rgba(0,0,0,0.22)_54%,rgba(0,0,0,0.82)_100%)]" />
-                </div>
-
-                <div className="flex flex-1 flex-col p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <h2 className="text-2xl font-semibold tracking-tight text-white">
-                        {product.name}
-                      </h2>
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <span className="border border-white/12 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
-                          {product.category}
-                        </span>
-                        <span
-                          className={[
-                            "px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
-                            product.stockStatus === "in_stock"
-                              ? "bg-emerald-900/40 text-emerald-300"
-                              : "bg-amber-900/40 text-amber-300",
-                          ].join(" ")}
-                        >
-                          {product.stockStatus === "in_stock" ? "En stock" : "Bajo pedido"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                        Precio
-                      </div>
-                      <div className="mt-1 text-xl font-semibold text-white">
-                        {formatMoney(product.priceCents, { currency: product.currency })}
-                      </div>
                     </div>
                   </div>
-
-                  <p className="mt-5 flex-1 text-justify text-sm leading-8 text-zinc-300">{product.summary}</p>
-
-                  <div className="mt-6 grid gap-3">
-                    <Link
-                      href={`/tienda/${encodeURIComponent(product.slug)}`}
-                      className="inline-flex w-full items-center justify-center rounded-[1rem] border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
-                    >
-                      Ver detalles →
-                    </Link>
-                    <AddToCartButton
-                      productSlug={product.slug}
-                      product={product}
-                      className="w-full rounded-[1rem]"
-                    />
-                  </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
 
           {list.length === 0 ? (
