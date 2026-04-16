@@ -451,6 +451,15 @@ async function fileToOptimizedJpegDataUrl(file: File) {
   return dataUrl;
 }
 
+function SpinnerIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" className={className}>
+      <circle cx="12" cy="12" r="9" className="stroke-current/25" strokeWidth="3" />
+      <path d="M21 12a9 9 0 0 0-9-9" className="stroke-current" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function AdminClient() {
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
@@ -2383,6 +2392,19 @@ export function AdminClient() {
             aria-hidden="true"
           />
           <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl lg:max-w-2xl">
+            {state === "loading" ? (
+              <div className="border-b border-amber-200 bg-amber-50 px-5 py-3">
+                <div className="flex items-center gap-3 text-sm font-semibold text-amber-900">
+                  <SpinnerIcon className="h-5 w-5 animate-spin" />
+                  <div>
+                    Guardando cambios...
+                    <span className="ml-2 font-medium text-amber-800/80">
+                      El sistema est&aacute; procesando el repuesto.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
               <div className="text-sm font-semibold text-zinc-950">
                 {isEditingExisting ? "Editar repuesto" : "Crear repuesto"}
