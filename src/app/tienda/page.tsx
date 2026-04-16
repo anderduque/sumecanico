@@ -143,7 +143,7 @@ export default async function TiendaPage({
         </Container>
       </section>
 
-      <section className="relative overflow-hidden bg-[#f6f3ef]">
+      <section className="relative isolate bg-[#f6f3ef]">
         <div className="absolute inset-0 opacity-15">
           <Image
             src="/home-engine-detail-optimized.jpg"
@@ -289,12 +289,7 @@ export default async function TiendaPage({
                   </div>
 
                   <div className="flex flex-1 flex-col p-6">
-                    <div
-                      className={[
-                        "flex flex-col gap-4",
-                        isConsultOnly ? "min-h-[9.5rem]" : "min-h-[12rem]",
-                      ].join(" ")}
-                    >
+                    <div className="flex flex-col gap-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
                           <h2 className="text-2xl font-semibold tracking-tight text-white">
@@ -333,15 +328,6 @@ export default async function TiendaPage({
                         </span>
                       </div>
                     </div>
-
-                    <p
-                      className={[
-                        "flex-1 text-justify text-sm leading-8 text-zinc-300",
-                        isConsultOnly ? "mt-4" : "mt-5",
-                      ].join(" ")}
-                    >
-                      {product.summary}
-                    </p>
 
                     <div className={["grid", isConsultOnly ? "mt-5 gap-2" : "mt-6 gap-3"].join(" ")}>
                       {isConsultOnly ? (
