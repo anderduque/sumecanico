@@ -49,25 +49,24 @@ export function Header() {
   const cartActive = pathname === "/carrito";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white">
       <Container className="py-2 md:py-0">
-        <div className="hidden min-h-14 items-center justify-between gap-4 md:flex md:h-16 md:min-h-0 md:gap-6">
-          <Link href="/" className="flex min-w-0 flex-1 items-center">
-            <div>
-              <div className="relative h-9 w-28 shrink-0">
-                <Image
-                  src={site.logoPath}
-                  alt={`${site.name} logo`}
-                  fill
-                  className="object-contain"
-                  sizes="112px"
-                  priority
-                />
-              </div>
+        <div className="hidden items-center justify-between gap-6 md:flex md:min-h-[5.5rem]">
+          <Link href="/" className="flex min-w-0 flex-1 items-center justify-start gap-3">
+            <div className="rounded-xl bg-transparent px-3 py-2">
+              <Image
+                src="/logo-white.png"
+                alt={`${site.name} logo`}
+                width={682}
+                height={338}
+                className="h-auto w-44 shrink-0 lg:w-48"
+                sizes="(min-width: 1280px) 192px, 176px"
+                priority
+              />
             </div>
-            <div className="hidden min-w-0 leading-tight sm:block">
-              <div className="truncate text-sm font-semibold text-zinc-950">{site.name}</div>
-              <div className="truncate text-xs text-zinc-600">{site.tagline}</div>
+            <div className="min-w-0 leading-tight">
+              <div className="text-base font-semibold text-zinc-950">{site.name}</div>
+              <div className="text-sm text-zinc-600">{site.tagline}</div>
             </div>
           </Link>
 
