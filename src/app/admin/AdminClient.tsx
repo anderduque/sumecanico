@@ -118,6 +118,11 @@ function compatibleWithToText(list: string[] | undefined) {
   return list?.join(", ") ?? "";
 }
 
+function normalizeShockBrand(brand: Product["shockBrand"] | undefined): Product["shockBrand"] | undefined {
+  if (brand === "GREBIS") return "GREKIS";
+  return brand;
+}
+
 function withNormalizedProductImages(product: Product): Product {
   const imageUrls = getProductImageUrls(product);
   return {
@@ -945,6 +950,7 @@ export function AdminClient() {
         : undefined;
     setDraft({
       ...normalized,
+      shockBrand: normalizeShockBrand(normalized.shockBrand),
       imageUrl: normalized.imageUrl ?? "",
       imageUrls: normalized.imageUrls ?? [],
       pricingMode: normalized.pricingMode ?? "fixed",
@@ -1012,7 +1018,7 @@ export function AdminClient() {
       setError("El SKU es requerido para amortiguadores.");
       return;
     }
-    const shockBrand = category === "Amortiguadores" ? draft.shockBrand : undefined;
+    const shockBrand = category === "Amortiguadores" ? normalizeShockBrand(draft.shockBrand) : undefined;
     if (category === "Amortiguadores" && !shockBrand) {
       setState("error");
       setError("Selecciona una marca para el amortiguador.");
@@ -1111,7 +1117,18 @@ export function AdminClient() {
 
       if (!res.ok) {
         setState("error");
-        setError("No se pudo guardar el producto.");
+        let apiError = "";
+        try {
+          const body = (await res.json()) as { error?: string };
+          apiError = typeof body.error === "string" ? body.error : "";
+        } catch {
+          apiError = "";
+        }
+        if (apiError === "invalid_product") {
+          setError("No se pudo guardar: revisa marca, precio, estado e imágenes del repuesto.");
+        } else {
+          setError("No se pudo guardar el producto.");
+        }
         return;
       }
 
