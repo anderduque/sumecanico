@@ -6,6 +6,146 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 
 const productsFilePath = path.join(process.cwd(), "data", "products.json");
+const firestoreDocumentSoftLimitBytes = 900_000;
+const firestoreBatchOperationLimit = 450;
+
+export type ProductsStoreErrorCode =
+  | "invalid_product"
+  | "invalid_payload"
+  | "payload_too_large"
+  | "permission_denied"
+  | "unauthenticated"
+  | "invalid_argument"
+  | "resource_exhausted"
+  | "unavailable"
+  | "firestore_config_invalid"
+  | "read_failed"
+  | "write_failed"
+  | "unknown";
+
+export class ProductsStoreError extends Error {
+  code: ProductsStoreErrorCode;
+
+  constructor(code: ProductsStoreErrorCode, message: string, options?: { cause?: unknown }) {
+    super(message);
+    this.name = "ProductsStoreError";
+    this.code = code;
+    if (options?.cause !== undefined) {
+      this.cause = options.cause;
+    }
+  }
+}
+
+function classifyStoreErrorCode(err: unknown): ProductsStoreErrorCode {
+  if (err instanceof ProductsStoreError) return err.code;
+  const codeRaw = (err as { code?: unknown } | null)?.code;
+  const code = typeof codeRaw === "string" ? codeRaw.toLowerCase() : "";
+  const message = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+
+  if (
+    code.includes("permission-denied") ||
+    message.includes("permission_denied") ||
+    message.includes("permission denied")
+  ) {
+    return "permission_denied";
+  }
+  if (
+    code.includes("unauthenticated") ||
+    message.includes("unauthenticated")
+  ) {
+    return "unauthenticated";
+  }
+  if (
+    code.includes("invalid-argument") ||
+    message.includes("invalid_argument") ||
+    message.includes("invalid argument")
+  ) {
+    return "invalid_argument";
+  }
+  if (
+    code.includes("resource-exhausted") ||
+    message.includes("resource_exhausted") ||
+    (message.includes("maximum") && message.includes("size")) ||
+    message.includes("too large")
+  ) {
+    return "payload_too_large";
+  }
+  if (
+    code.includes("unavailable") ||
+    code.includes("deadline-exceeded") ||
+    message.includes("unavailable") ||
+    message.includes("deadline exceeded")
+  ) {
+    return "unavailable";
+  }
+  return "unknown";
+}
+
+function wrapStoreReadError(err: unknown, message = "No se pudieron cargar los productos.") {
+  if (err instanceof ProductsStoreError) return err;
+  const code = classifyStoreErrorCode(err);
+  if (code === "payload_too_large") {
+    return new ProductsStoreError(code, "Un producto excede el tamaño soportado por Firestore.", { cause: err });
+  }
+  if (code === "permission_denied") {
+    return new ProductsStoreError(code, "Firestore negó permisos para leer productos.", { cause: err });
+  }
+  if (code === "unauthenticated") {
+    return new ProductsStoreError(code, "Firestore rechazó la autenticación al leer productos.", { cause: err });
+  }
+  if (code === "invalid_argument") {
+    return new ProductsStoreError(code, "La consulta de productos a Firestore es inválida.", { cause: err });
+  }
+  if (code === "unavailable") {
+    return new ProductsStoreError(code, "Firestore no está disponible temporalmente.", { cause: err });
+  }
+  return new ProductsStoreError("read_failed", message, { cause: err });
+}
+
+function wrapStoreWriteError(err: unknown, message = "No se pudo guardar el producto.") {
+  if (err instanceof ProductsStoreError) return err;
+  const code = classifyStoreErrorCode(err);
+  if (code === "payload_too_large") {
+    return new ProductsStoreError(code, "El producto excede el tamaño máximo permitido por Firestore.", { cause: err });
+  }
+  if (code === "permission_denied") {
+    return new ProductsStoreError(code, "Firestore negó permisos para guardar productos.", { cause: err });
+  }
+  if (code === "unauthenticated") {
+    return new ProductsStoreError(code, "Firestore rechazó la autenticación al guardar productos.", { cause: err });
+  }
+  if (code === "invalid_argument") {
+    return new ProductsStoreError(code, "Los datos enviados a Firestore son inválidos.", { cause: err });
+  }
+  if (code === "unavailable") {
+    return new ProductsStoreError(code, "Firestore no está disponible temporalmente.", { cause: err });
+  }
+  return new ProductsStoreError("write_failed", message, { cause: err });
+}
+
+function estimateUtf8Bytes(input: string) {
+  return Buffer.byteLength(input, "utf8");
+}
+
+function estimateProductDocumentBytes(product: Product) {
+  const serialized = JSON.stringify(
+    removeUndefined({
+      ...product,
+      updatedAt: "__server_timestamp__",
+    } as Record<string, unknown>),
+  );
+  return estimateUtf8Bytes(serialized);
+}
+
+function assertProductFitsFirestore(product: Product) {
+  const bytes = estimateProductDocumentBytes(product);
+  if (bytes > firestoreDocumentSoftLimitBytes) {
+    throw new ProductsStoreError(
+      "payload_too_large",
+      `El producto excede el tamaño permitido para Firestore (${bytes} bytes).`,
+    );
+  }
+}
 
 function isProduct(x: unknown): x is Product {
   if (!x || typeof x !== "object") return false;
@@ -73,18 +213,25 @@ export function getFirestoreDb() {
 
   if (!hasServiceJson && !hasPieces) return null;
 
-  if (getApps().length === 0) {
-    const credential = hasServiceJson
-      ? cert(JSON.parse(serviceAccountJson as string) as object)
-      : cert({
-          projectId: projectId as string,
-          clientEmail: clientEmail as string,
-          privateKey: (privateKey as string).replace(/\\n/g, "\n"),
-        });
-    initializeApp({ credential });
+  try {
+    if (getApps().length === 0) {
+      const credential = hasServiceJson
+        ? cert(JSON.parse(serviceAccountJson as string) as object)
+        : cert({
+            projectId: projectId as string,
+            clientEmail: clientEmail as string,
+            privateKey: (privateKey as string).replace(/\\n/g, "\n"),
+          });
+      initializeApp({ credential });
+    }
+    return getFirestore();
+  } catch (err) {
+    throw new ProductsStoreError(
+      "firestore_config_invalid",
+      "La configuración de credenciales de Firestore es inválida.",
+      { cause: err },
+    );
   }
-
-  return getFirestore();
 }
 
 function removeUndefined<T extends Record<string, unknown>>(value: T) {
@@ -98,20 +245,32 @@ function removeUndefined<T extends Record<string, unknown>>(value: T) {
 async function getProductsUncached(): Promise<Product[]> {
   const db = getFirestoreDb();
   if (db) {
-    const snap = await db.collection("products").get();
-    const list: Product[] = snap.docs
-      .map((d: { data: () => unknown }) => d.data())
-      .filter(isProduct)
-      .map(normalizeProduct)
-      .sort((a: Product, b: Product) => a.name.localeCompare(b.name));
-    return list;
+    try {
+      const snap = await db.collection("products").get();
+      const list: Product[] = snap.docs
+        .map((d: { data: () => unknown }) => d.data())
+        .filter(isProduct)
+        .map(normalizeProduct)
+        .sort((a: Product, b: Product) => a.name.localeCompare(b.name));
+      return list;
+    } catch (err) {
+      throw wrapStoreReadError(err);
+    }
   }
 
-  const raw = await readFile(productsFilePath, "utf8");
-  const parsed = JSON.parse(raw) as unknown;
-  if (!Array.isArray(parsed)) return [];
-  const list = parsed.filter(isProduct).map(normalizeProduct);
-  return list;
+  try {
+    const raw = await readFile(productsFilePath, "utf8");
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    const list = parsed.filter(isProduct).map(normalizeProduct);
+    return list;
+  } catch (err) {
+    throw wrapStoreReadError(err);
+  }
+}
+
+export async function getProductsNoCache(): Promise<Product[]> {
+  return getProductsUncached();
 }
 
 function normalizeProduct(product: Product): Product {
@@ -148,19 +307,23 @@ export const getProducts = unstable_cache(getProductsUncached, ["products"], {
 async function getProductBySlugUncached(slug: string): Promise<Product | undefined> {
   const db = getFirestoreDb();
   if (db) {
-    const byId = await db.collection("products").doc(slug).get();
-    if (byId.exists) {
-      const data = byId.data() as unknown;
-      return isProduct(data) ? normalizeProduct(data) : undefined;
-    }
+    try {
+      const byId = await db.collection("products").doc(slug).get();
+      if (byId.exists) {
+        const data = byId.data() as unknown;
+        return isProduct(data) ? normalizeProduct(data) : undefined;
+      }
 
-    const snap = await db
-      .collection("products")
-      .where("slug", "==", slug)
-      .limit(1)
-      .get();
-    const found = snap.docs[0]?.data() as unknown;
-    return isProduct(found) ? normalizeProduct(found) : undefined;
+      const snap = await db
+        .collection("products")
+        .where("slug", "==", slug)
+        .limit(1)
+        .get();
+      const found = snap.docs[0]?.data() as unknown;
+      return isProduct(found) ? normalizeProduct(found) : undefined;
+    } catch (err) {
+      throw wrapStoreReadError(err);
+    }
   }
 
   const list = await getProducts();
@@ -181,53 +344,88 @@ export async function saveProducts(nextProducts: Product[]) {
 
   const db = getFirestoreDb();
   if (db) {
-    const col = db.collection("products");
-    const nextSlugs = new Set(deduped.map((p) => p.slug));
-    const existing = await col.listDocuments();
-    const batch = db.batch();
+    try {
+      const col = db.collection("products");
+      const nextSlugs = new Set(deduped.map((p) => p.slug));
+      const existing = await col.listDocuments();
+      const ops: Array<
+        | { kind: "delete"; slug: string }
+        | { kind: "set"; slug: string; data: Record<string, unknown> }
+      > = [];
 
-    for (const ref of existing) {
-      if (!nextSlugs.has(ref.id)) batch.delete(ref);
+      for (const ref of existing) {
+        if (!nextSlugs.has(ref.id)) {
+          ops.push({ kind: "delete", slug: ref.id });
+        }
+      }
+
+      for (const p of deduped) {
+        assertProductFitsFirestore(p);
+        ops.push({
+          kind: "set",
+          slug: p.slug,
+          data: removeUndefined({ ...p, updatedAt: FieldValue.serverTimestamp() } as Record<string, unknown>),
+        });
+      }
+
+      for (let i = 0; i < ops.length; i += firestoreBatchOperationLimit) {
+        const chunk = ops.slice(i, i + firestoreBatchOperationLimit);
+        const batch = db.batch();
+        for (const op of chunk) {
+          const ref = col.doc(op.slug);
+          if (op.kind === "delete") {
+            batch.delete(ref);
+          } else {
+            batch.set(ref, op.data);
+          }
+        }
+        await batch.commit();
+      }
+
+      revalidateTag("products", "max");
+      return;
+    } catch (err) {
+      throw wrapStoreWriteError(err, "No se pudieron guardar los productos.");
     }
-
-    for (const p of deduped) {
-      batch.set(
-        col.doc(p.slug),
-        removeUndefined({ ...p, updatedAt: FieldValue.serverTimestamp() } as Record<string, unknown>),
-      );
-    }
-
-    await batch.commit();
-    revalidateTag("products", "max");
-    return;
   }
 
-  const json = JSON.stringify(deduped, null, 2) + "\n";
-  await writeFile(productsFilePath, json, "utf8");
-  revalidateTag("products", "max");
+  try {
+    const json = JSON.stringify(deduped, null, 2) + "\n";
+    await writeFile(productsFilePath, json, "utf8");
+    revalidateTag("products", "max");
+  } catch (err) {
+    throw wrapStoreWriteError(err, "No se pudieron guardar los productos.");
+  }
 }
 
 export async function upsertProduct(next: Product) {
-  if (!isProduct(next)) return;
+  if (!isProduct(next)) {
+    throw new ProductsStoreError("invalid_product", "El payload del producto no es válido.");
+  }
   const product = normalizeProduct(next);
 
   const db = getFirestoreDb();
   if (db) {
-    await db
-      .collection("products")
-      .doc(product.slug)
-      .set(
-        removeUndefined({
-          ...product,
-          updatedAt: FieldValue.serverTimestamp(),
-        } as Record<string, unknown>),
-        { merge: true },
-      );
-    revalidateTag("products", "max");
-    return;
+    try {
+      assertProductFitsFirestore(product);
+      await db
+        .collection("products")
+        .doc(product.slug)
+        .set(
+          removeUndefined({
+            ...product,
+            updatedAt: FieldValue.serverTimestamp(),
+          } as Record<string, unknown>),
+          { merge: true },
+        );
+      revalidateTag("products", "max");
+      return;
+    } catch (err) {
+      throw wrapStoreWriteError(err);
+    }
   }
 
-  const list = await getProducts();
+  const list = await getProductsUncached();
   const bySlug = new Map<string, Product>(list.map((p) => [p.slug, p]));
   bySlug.set(product.slug, product);
   await saveProducts(Array.from(bySlug.values()));
@@ -239,12 +437,16 @@ export async function deleteProduct(slug: string) {
 
   const db = getFirestoreDb();
   if (db) {
-    await db.collection("products").doc(cleaned).delete();
-    revalidateTag("products", "max");
-    return;
+    try {
+      await db.collection("products").doc(cleaned).delete();
+      revalidateTag("products", "max");
+      return;
+    } catch (err) {
+      throw wrapStoreWriteError(err, "No se pudo eliminar el producto.");
+    }
   }
 
-  const list = await getProducts();
+  const list = await getProductsUncached();
   const next = list.filter((p) => p.slug !== cleaned);
   await saveProducts(next);
 }

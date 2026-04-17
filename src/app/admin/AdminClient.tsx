@@ -481,6 +481,67 @@ function SpinnerIcon({ className = "" }: { className?: string }) {
   );
 }
 
+type ApiErrorPayload = {
+  error?: string;
+  detail?: string;
+  message?: string;
+};
+
+async function readApiErrorPayload(res: Response): Promise<ApiErrorPayload> {
+  try {
+    const body = (await res.json()) as unknown;
+    if (!body || typeof body !== "object") return {};
+    const payload = body as { error?: unknown; detail?: unknown; message?: unknown };
+    return {
+      error: typeof payload.error === "string" ? payload.error : undefined,
+      detail: typeof payload.detail === "string" ? payload.detail : undefined,
+      message: typeof payload.message === "string" ? payload.message : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function mapProductsApiError(payload: ApiErrorPayload, fallback: string) {
+  if (payload.message) return payload.message;
+  if (payload.error === "invalid_json") return "El formato de datos es inválido. Revisa el producto e intenta de nuevo.";
+  if (payload.error === "invalid_product") {
+    if (payload.detail === "too_many_images") return "Solo se permiten hasta 10 imágenes por producto.";
+    if (payload.detail === "missing_price") return "Debes indicar un precio válido para este repuesto.";
+    return "Los datos del producto no son válidos. Revisa campos obligatorios e intenta de nuevo.";
+  }
+  if (payload.error === "save_failed") {
+    if (payload.detail === "payload_too_large") {
+      return "No se pudo guardar: el producto supera el límite de Firestore. Reduce peso o cantidad de imágenes.";
+    }
+    if (payload.detail === "permission_denied") {
+      return "No se pudo guardar: Firestore negó permisos. Verifica reglas/credenciales del servidor.";
+    }
+    if (payload.detail === "firestore_config_invalid") {
+      return "No se pudo guardar: la configuración de Firestore es inválida en el servidor.";
+    }
+    if (payload.detail === "unauthenticated") {
+      return "No se pudo guardar: Firestore rechazó autenticación del servidor.";
+    }
+    if (payload.detail === "unavailable") {
+      return "Firestore no está disponible en este momento. Intenta de nuevo.";
+    }
+  }
+  if (payload.error === "load_failed") {
+    if (payload.detail === "permission_denied") {
+      return "No se pudo cargar el catálogo: Firestore negó permisos de lectura.";
+    }
+    if (payload.detail === "firestore_config_invalid") {
+      return "No se pudo cargar el catálogo: configuración de Firestore inválida.";
+    }
+    if (payload.detail === "unavailable") {
+      return "No se pudo cargar el catálogo: Firestore no está disponible temporalmente.";
+    }
+  }
+  if (payload.error === "delete_failed") return "No se pudo eliminar el repuesto en Firestore.";
+  return fallback;
+}
+
 const adminAuthHeaderStorageKey = "adminAuthHeader";
 const adminUserStorageKey = "adminUser";
 const adminLastActiveStorageKey = "adminLastActiveAt";
@@ -777,7 +838,8 @@ export function AdminClient() {
       }
       if (!res.ok) {
         setState("error");
-        setError("No se pudo cargar el catálogo.");
+        const apiErr = await readApiErrorPayload(res);
+        setError(mapProductsApiError(apiErr, "No se pudo cargar el catálogo."));
         return false;
       }
       const data = (await res.json()) as unknown;
@@ -1111,33 +1173,15 @@ export function AdminClient() {
 
       if (res.status === 409) {
         setState("error");
-        setError("Ya existe un repuesto con ese identificador.");
+        const apiErr = await readApiErrorPayload(res);
+        setError(mapProductsApiError(apiErr, "Ya existe un repuesto con ese identificador."));
         return;
       }
 
       if (!res.ok) {
         setState("error");
-        let apiError = "";
-        let apiDetail = "";
-        try {
-          const body = (await res.json()) as { error?: string; detail?: string };
-          apiError = typeof body.error === "string" ? body.error : "";
-          apiDetail = typeof body.detail === "string" ? body.detail : "";
-        } catch {
-          apiError = "";
-          apiDetail = "";
-        }
-        if (apiError === "invalid_product") {
-          setError("No se pudo guardar: revisa marca, precio, estado e imágenes del repuesto.");
-        } else if (apiError === "save_failed") {
-          if (apiDetail === "payload_too_large") {
-            setError("No se pudo guardar: las imágenes son muy pesadas. Reduce el tamaño o cantidad.");
-          } else {
-            setError("No se pudo guardar por un error interno. Intenta de nuevo.");
-          }
-        } else {
-          setError("No se pudo guardar el producto.");
-        }
+        const apiErr = await readApiErrorPayload(res);
+        setError(mapProductsApiError(apiErr, "No se pudo guardar el producto."));
         return;
       }
 
@@ -1176,7 +1220,8 @@ export function AdminClient() {
       }
       if (!res.ok) {
         setState("error");
-        setError("No se pudo eliminar el producto.");
+        const apiErr = await readApiErrorPayload(res);
+        setError(mapProductsApiError(apiErr, "No se pudo eliminar el producto."));
         return;
       }
       await load(authHeader);
