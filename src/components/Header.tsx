@@ -51,17 +51,19 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">
       <Container className="py-2 md:py-0">
-        <div className="flex min-h-14 items-center justify-between gap-4 md:h-16 md:min-h-0 md:gap-6">
-          <Link href="/" className="flex min-w-0 items-center gap-3">
-            <div className="relative h-9 w-28 shrink-0">
-              <Image
-                src={site.logoPath}
-                alt={`${site.name} logo`}
-                fill
-                className="object-contain"
-                sizes="112px"
-                priority
-              />
+        <div className="hidden min-h-14 items-center justify-between gap-4 md:flex md:h-16 md:min-h-0 md:gap-6">
+          <Link href="/" className="flex min-w-0 flex-1 items-center">
+            <div>
+              <div className="relative h-9 w-28 shrink-0">
+                <Image
+                  src={site.logoPath}
+                  alt={`${site.name} logo`}
+                  fill
+                  className="object-contain"
+                  sizes="112px"
+                  priority
+                />
+              </div>
             </div>
             <div className="hidden min-w-0 leading-tight sm:block">
               <div className="truncate text-sm font-semibold text-zinc-950">{site.name}</div>
@@ -93,23 +95,25 @@ export function Header() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-2 md:hidden">
-            <Link href="/carrito" aria-label="Carrito" className="relative inline-flex h-9 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900">
-              <CartSvg className="h-5 w-5 text-primary" />
-              {totalItems > 0 ? (
-                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-white">
-                  {totalItems}
-                </span>
-              ) : null}
-            </Link>
-          </div>
         </div>
 
-        <nav className="-mx-1 mt-2 flex gap-2 overflow-x-auto pb-1 md:hidden">
+        <nav className="flex items-center gap-2 overflow-x-auto pb-1 md:hidden">
           <NavLink href="/" label="Inicio" />
           <NavLink href="/servicios" label="Servicios" />
           <NavLink href="/tienda" label="Tienda" />
           <NavLink href="/contacto" label="Contacto" />
+          <Link
+            href="/carrito"
+            aria-label="Carrito"
+            className="relative ml-auto inline-flex h-9 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900"
+          >
+            <CartSvg className="h-5 w-5 text-primary" />
+            {totalItems > 0 ? (
+              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-white">
+                {totalItems}
+              </span>
+            ) : null}
+          </Link>
         </nav>
       </Container>
     </header>
