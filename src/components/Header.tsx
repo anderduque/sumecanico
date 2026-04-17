@@ -53,20 +53,24 @@ export function Header() {
       <Container className="py-2 md:py-0">
         <div className="hidden items-center justify-between gap-6 md:flex md:min-h-[5.5rem]">
           <Link href="/" className="flex min-w-0 flex-1 items-center justify-start gap-3">
-            <div className="rounded-xl bg-transparent px-3 py-2">
+            <div className="shrink-0 px-3 py-2">
               <Image
                 src="/logo-white.png"
                 alt={`${site.name} logo`}
                 width={682}
                 height={338}
-                className="h-auto w-44 shrink-0 lg:w-48"
+                className="h-auto w-44 lg:w-48"
                 sizes="(min-width: 1280px) 192px, 176px"
                 priority
               />
             </div>
             <div className="min-w-0 leading-tight">
-              <div className="text-base font-semibold text-zinc-950">{site.name}</div>
-              <div className="text-sm text-zinc-600">{site.tagline}</div>
+              <div className="text-base font-extrabold tracking-[-0.03em] text-primary lg:text-lg">
+                {site.name}
+              </div>
+              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-600 lg:text-sm">
+                {site.tagline}
+              </div>
             </div>
           </Link>
 

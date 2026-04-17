@@ -95,7 +95,7 @@ function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function Home() {
   return (
     <div className="bg-white">
-      <section className="border-b border-zinc-800 bg-black text-white">
+      <section className="sticky top-16 z-30 border-b border-zinc-800 bg-black text-white md:top-[6.5rem]">
         <Container className="py-3">
           <div className="flex flex-col gap-3 text-xs text-zinc-300 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:text-sm">
             <div className="flex items-center gap-2">
