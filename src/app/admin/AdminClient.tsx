@@ -485,6 +485,24 @@ async function fileToOptimizedJpegFile(file: File) {
   return new File([blob], `${safeBaseName}.jpg`, { type: "image/jpeg" });
 }
 
+function fileExtensionFromMimeType(mimeType: string) {
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/webp") return "webp";
+  return "jpg";
+}
+
+function dataUrlToFile(dataUrl: string, baseName = "imagen") {
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) {
+    throw new Error("Formato de imagen inválido.");
+  }
+  const mimeType = match[1];
+  const base64 = match[2];
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  const ext = fileExtensionFromMimeType(mimeType);
+  return new File([bytes], `${baseName}.${ext}`, { type: mimeType });
+}
+
 function SpinnerIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" className={className}>
@@ -1180,6 +1198,57 @@ export function AdminClient() {
           .filter((s) => s.label && s.value) ?? undefined,
     };
 
+    const normalizedImageUrls: string[] = [];
+    for (let i = 0; i < imageUrls.length; i += 1) {
+      const rawImage = imageUrls[i]!;
+      if (!rawImage.startsWith("data:")) {
+        normalizedImageUrls.push(rawImage);
+        continue;
+      }
+
+      const sourceFile = dataUrlToFile(rawImage, `legacy-${derivedSlug}-${i + 1}`);
+      const optimizedFile = await fileToOptimizedJpegFile(sourceFile);
+      const formData = new FormData();
+      formData.set("image", optimizedFile, optimizedFile.name);
+      formData.set("productSlug", derivedSlug);
+
+      const uploadRes = await fetch("/api/admin/uploads", {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+        },
+        body: formData,
+      });
+
+      if (uploadRes.status === 401) {
+        clearStoredAuth();
+        setAuthHeader(null);
+        setState("error");
+        setError("Credenciales inválidas o no configuradas.");
+        return;
+      }
+      if (!uploadRes.ok) {
+        const uploadErr = await readApiErrorPayload(uploadRes);
+        setState("error");
+        setError(mapUploadApiError(uploadErr, "No se pudo subir una imagen del producto."));
+        return;
+      }
+      const uploadBody = (await uploadRes.json()) as { url?: string };
+      const uploadedUrl = typeof uploadBody.url === "string" ? uploadBody.url : "";
+      if (!uploadedUrl) {
+        setState("error");
+        setError("No se pudo obtener la URL de una imagen del producto.");
+        return;
+      }
+      normalizedImageUrls.push(uploadedUrl);
+    }
+
+    const payloadWithStorageImages: Product = {
+      ...payload,
+      imageUrl: normalizedImageUrls[0] ?? "",
+      imageUrls: normalizedImageUrls,
+    };
+
     const method = isEditingExisting ? "PUT" : "POST";
 
     try {
@@ -1189,7 +1258,7 @@ export function AdminClient() {
           Authorization: authHeader,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadWithStorageImages),
       });
 
       if (res.status === 401) {
