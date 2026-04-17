@@ -1118,14 +1118,23 @@ export function AdminClient() {
       if (!res.ok) {
         setState("error");
         let apiError = "";
+        let apiDetail = "";
         try {
-          const body = (await res.json()) as { error?: string };
+          const body = (await res.json()) as { error?: string; detail?: string };
           apiError = typeof body.error === "string" ? body.error : "";
+          apiDetail = typeof body.detail === "string" ? body.detail : "";
         } catch {
           apiError = "";
+          apiDetail = "";
         }
         if (apiError === "invalid_product") {
           setError("No se pudo guardar: revisa marca, precio, estado e imágenes del repuesto.");
+        } else if (apiError === "save_failed") {
+          if (apiDetail === "payload_too_large") {
+            setError("No se pudo guardar: las imágenes son muy pesadas. Reduce el tamaño o cantidad.");
+          } else {
+            setError("No se pudo guardar por un error interno. Intenta de nuevo.");
+          }
         } else {
           setError("No se pudo guardar el producto.");
         }
