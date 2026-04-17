@@ -432,14 +432,25 @@ function stripBankFromDetails(details: string) {
 
 const maxUploadImageBytes = 2_000_000;
 const maxUploadImageDimension = 1024;
-const maxUploadImageOutputBytes = 900_000;
+const maxUploadImageOutputBytes = 2_000_000;
 
-function dataUrlToBytes(dataUrl: string) {
-  const base64 = dataUrl.split(",")[1] ?? "";
-  return Math.floor((base64.length * 3) / 4);
+function canvasToBlob(canvas: HTMLCanvasElement, quality: number) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("No se pudo procesar la imagen."));
+          return;
+        }
+        resolve(blob);
+      },
+      "image/jpeg",
+      quality,
+    );
+  });
 }
 
-async function fileToOptimizedJpegDataUrl(file: File) {
+async function fileToOptimizedJpegFile(file: File) {
   if (file.size > maxUploadImageBytes) {
     throw new Error("La imagen es muy pesada. Máximo 2MB.");
   }
@@ -461,15 +472,17 @@ async function fileToOptimizedJpegDataUrl(file: File) {
   bitmap.close?.();
 
   let quality = 0.82;
-  let dataUrl = canvas.toDataURL("image/jpeg", quality);
-  while (dataUrlToBytes(dataUrl) > maxUploadImageOutputBytes && quality > 0.5) {
+  let blob = await canvasToBlob(canvas, quality);
+  while (blob.size > maxUploadImageOutputBytes && quality > 0.5) {
     quality = Math.max(0.5, quality - 0.08);
-    dataUrl = canvas.toDataURL("image/jpeg", quality);
+    blob = await canvasToBlob(canvas, quality);
   }
-  if (dataUrlToBytes(dataUrl) > maxUploadImageOutputBytes) {
+  if (blob.size > maxUploadImageOutputBytes) {
     throw new Error("No se pudo optimizar la imagen lo suficiente. Usa una imagen más liviana.");
   }
-  return dataUrl;
+
+  const safeBaseName = file.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_-]+/g, "-") || "imagen";
+  return new File([blob], `${safeBaseName}.jpg`, { type: "image/jpeg" });
 }
 
 function SpinnerIcon({ className = "" }: { className?: string }) {
@@ -542,6 +555,20 @@ function mapProductsApiError(payload: ApiErrorPayload, fallback: string) {
   return fallback;
 }
 
+function mapUploadApiError(payload: ApiErrorPayload, fallback: string) {
+  if (payload.message) return payload.message;
+  if (payload.error === "invalid_image") return "No se recibió un archivo de imagen válido.";
+  if (payload.error === "invalid_image_type") return "Formato no soportado. Usa JPG, PNG o WEBP.";
+  if (payload.error === "payload_too_large") return "La imagen excede el límite de 2MB.";
+  if (payload.error === "storage_not_configured") return "Firebase Storage no está configurado en el servidor.";
+  if (payload.error === "upload_failed") {
+    if (payload.detail === "permission_denied") return "Storage negó permisos para subir la imagen.";
+    if (payload.detail === "firestore_config_invalid") return "La configuración de Firebase es inválida.";
+    if (payload.detail === "unavailable") return "Storage no está disponible temporalmente.";
+  }
+  return fallback;
+}
+
 const adminAuthHeaderStorageKey = "adminAuthHeader";
 const adminUserStorageKey = "adminUser";
 const adminLastActiveStorageKey = "adminLastActiveAt";
@@ -567,6 +594,7 @@ export function AdminClient() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [priceInput, setPriceInput] = useState("");
   const [inventoryInput, setInventoryInput] = useState("");
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   const [tab, setTab] = useState<"dashboard" | "products" | "payments" | "orders" | "security">("dashboard");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -650,6 +678,7 @@ export function AdminClient() {
     setCompatModel("");
     setPriceInput("");
     setInventoryInput("");
+    setUploadingImages(false);
     setError(null);
     setState("idle");
     setShowPanel(false);
@@ -2796,26 +2825,68 @@ export function AdminClient() {
                           const files = Array.from(e.target.files ?? []);
                           e.currentTarget.value = "";
                           if (!files.length) return;
-                          setState("loading");
+                          if (!authHeader) {
+                            setError("Debes iniciar sesión para subir imágenes.");
+                            return;
+                          }
+                          setUploadingImages(true);
                           setError(null);
-                          void Promise.all(files.map((file) => fileToOptimizedJpegDataUrl(file)))
-                            .then((dataUrls) => {
-                              setDraft((p) => {
-                                const nextImageUrls = [...getProductImageUrls(p), ...dataUrls];
-                                return {
-                                  ...p,
-                                  imageUrl: nextImageUrls[0] ?? "",
-                                  imageUrls: nextImageUrls,
-                                };
+                          const productSlugSeed = slugify(draft.name) || draft.slug || "repuesto";
+                          void (async () => {
+                            const uploadedUrls: string[] = [];
+                            for (const file of files) {
+                              const optimizedFile = await fileToOptimizedJpegFile(file);
+                              const formData = new FormData();
+                              formData.set("image", optimizedFile, optimizedFile.name);
+                              formData.set("productSlug", productSlugSeed);
+                              const res = await fetch("/api/admin/uploads", {
+                                method: "POST",
+                                headers: {
+                                  Authorization: authHeader,
+                                },
+                                body: formData,
                               });
-                              setState("ready");
-                            })
+                              if (res.status === 401) {
+                                clearStoredAuth();
+                                setAuthHeader(null);
+                                throw new Error("Credenciales inválidas o no configuradas.");
+                              }
+                              if (!res.ok) {
+                                const apiErr = await readApiErrorPayload(res);
+                                throw new Error(
+                                  mapUploadApiError(apiErr, "No se pudo cargar la imagen."),
+                                );
+                              }
+                              const body = (await res.json()) as { url?: string };
+                              const url = typeof body.url === "string" ? body.url : "";
+                              if (!url) {
+                                throw new Error("No se pudo obtener la URL de la imagen.");
+                              }
+                              uploadedUrls.push(url);
+                            }
+
+                            setDraft((p) => {
+                              const nextImageUrls = [...getProductImageUrls(p), ...uploadedUrls];
+                              return {
+                                ...p,
+                                imageUrl: nextImageUrls[0] ?? "",
+                                imageUrls: nextImageUrls,
+                              };
+                            });
+                          })()
                             .catch((err: unknown) => {
-                              setState("error");
                               setError(err instanceof Error ? err.message : "No se pudo cargar la imagen.");
+                            })
+                            .finally(() => {
+                              setUploadingImages(false);
                             });
                         }}
                       />
+                      {uploadingImages ? (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                          Estamos subiendo y optimizando tus imágenes en Firebase Storage...
+                        </div>
+                      ) : null}
                       {draftImageUrls.length ? (
                         <div className="grid gap-3 sm:grid-cols-2">
                           {draftImageUrls.map((imageUrl, index) => (
@@ -3213,7 +3284,7 @@ export function AdminClient() {
                       type="button"
                       onClick={remove}
                       className="rounded-lg border border-rose-200 bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700"
-                      disabled={state === "loading"}
+                      disabled={state === "loading" || uploadingImages}
                     >
                       Sí, eliminar
                     </button>
@@ -3238,6 +3309,7 @@ export function AdminClient() {
                     type="button"
                     onClick={() => setShowPanel(false)}
                     className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                    disabled={state === "loading" || uploadingImages}
                   >
                     Cancelar
                   </button>
@@ -3245,9 +3317,9 @@ export function AdminClient() {
                     type="button"
                     onClick={save}
                     className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:brightness-90"
-                    disabled={state === "loading"}
+                    disabled={state === "loading" || uploadingImages}
                   >
-                    {state === "loading" ? "Guardando..." : "Guardar"}
+                    {uploadingImages ? "Subiendo fotos..." : state === "loading" ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
               </div>

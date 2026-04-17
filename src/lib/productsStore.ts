@@ -4,6 +4,7 @@ import { revalidateTag, unstable_cache } from "next/cache";
 import { getProductCoverImage, getProductImageUrls, type Product } from "@/lib/productTypes";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
 const productsFilePath = path.join(process.cwd(), "data", "products.json");
 const firestoreDocumentSoftLimitBytes = 900_000;
@@ -33,6 +34,56 @@ export class ProductsStoreError extends Error {
     if (options?.cause !== undefined) {
       this.cause = options.cause;
     }
+  }
+}
+
+function getConfiguredStorageBucketName() {
+  const explicit = process.env.FIREBASE_STORAGE_BUCKET;
+  if (typeof explicit === "string" && explicit.trim() !== "") {
+    return explicit.trim();
+  }
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  if (typeof projectId === "string" && projectId.trim() !== "") {
+    return `${projectId.trim()}.appspot.com`;
+  }
+  return null;
+}
+
+function getFirebaseAdminApp() {
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  const hasServiceJson = typeof serviceAccountJson === "string" && serviceAccountJson.trim() !== "";
+  const hasPieces =
+    typeof projectId === "string" &&
+    projectId.trim() !== "" &&
+    typeof clientEmail === "string" &&
+    clientEmail.trim() !== "" &&
+    typeof privateKey === "string" &&
+    privateKey.trim() !== "";
+
+  if (!hasServiceJson && !hasPieces) return null;
+
+  try {
+    if (getApps().length === 0) {
+      const credential = hasServiceJson
+        ? cert(JSON.parse(serviceAccountJson as string) as object)
+        : cert({
+            projectId: projectId as string,
+            clientEmail: clientEmail as string,
+            privateKey: (privateKey as string).replace(/\\n/g, "\n"),
+          });
+      initializeApp({ credential, storageBucket: getConfiguredStorageBucketName() ?? undefined });
+    }
+    return getApps()[0]!;
+  } catch (err) {
+    throw new ProductsStoreError(
+      "firestore_config_invalid",
+      "La configuración de credenciales de Firebase Admin es inválida.",
+      { cause: err },
+    );
   }
 }
 
@@ -197,41 +248,22 @@ function isProduct(x: unknown): x is Product {
 }
 
 export function getFirestoreDb() {
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const app = getFirebaseAdminApp();
+  if (!app) return null;
+  return getFirestore(app);
+}
 
-  const hasServiceJson = typeof serviceAccountJson === "string" && serviceAccountJson.trim() !== "";
-  const hasPieces =
-    typeof projectId === "string" &&
-    projectId.trim() !== "" &&
-    typeof clientEmail === "string" &&
-    clientEmail.trim() !== "" &&
-    typeof privateKey === "string" &&
-    privateKey.trim() !== "";
-
-  if (!hasServiceJson && !hasPieces) return null;
-
-  try {
-    if (getApps().length === 0) {
-      const credential = hasServiceJson
-        ? cert(JSON.parse(serviceAccountJson as string) as object)
-        : cert({
-            projectId: projectId as string,
-            clientEmail: clientEmail as string,
-            privateKey: (privateKey as string).replace(/\\n/g, "\n"),
-          });
-      initializeApp({ credential });
-    }
-    return getFirestore();
-  } catch (err) {
+export function getStorageBucket() {
+  const app = getFirebaseAdminApp();
+  if (!app) return null;
+  const bucketName = getConfiguredStorageBucketName();
+  if (!bucketName) {
     throw new ProductsStoreError(
       "firestore_config_invalid",
-      "La configuración de credenciales de Firestore es inválida.",
-      { cause: err },
+      "Falta configurar FIREBASE_STORAGE_BUCKET para subir imágenes.",
     );
   }
+  return getStorage(app).bucket(bucketName);
 }
 
 function removeUndefined<T extends Record<string, unknown>>(value: T) {
