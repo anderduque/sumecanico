@@ -271,9 +271,9 @@ export default async function TiendaPage({
               return (
                 <article
                   key={product.slug}
-                  className="group flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#1a1a1a]/95 transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_30px_70px_-40px_rgba(0,0,0,0.8)]"
+                  className="group flex h-full flex-col overflow-hidden rounded-[1.25rem] border border-white/10 bg-[#1a1a1a]/95 transition duration-300 hover:-translate-y-0.5 hover:border-primary/55 hover:shadow-[0_24px_52px_-40px_rgba(0,0,0,0.75)]"
                 >
-                  <div className="relative aspect-[16/10] overflow-hidden bg-zinc-900">
+                  <div className="relative aspect-[16/9.6] overflow-hidden bg-zinc-900">
                     {coverImage ? (
                       coverImage.startsWith("data:") ? (
                         <Image
@@ -301,19 +301,19 @@ export default async function TiendaPage({
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.05)_0%,rgba(0,0,0,0.22)_54%,rgba(0,0,0,0.82)_100%)]" />
                   </div>
 
-                  <div className="flex flex-1 flex-col p-6">
-                    <div className="flex flex-col gap-4">
+                  <div className="flex flex-1 flex-col p-4 sm:p-5">
+                    <div className="flex flex-col gap-3">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
-                          <h2 className="text-2xl font-semibold tracking-tight text-white">
+                          <h2 className="text-xl font-semibold tracking-tight text-white">
                             {product.name}
                           </h2>
                         </div>
 
                         {!isConsultOnly ? (
                           <div className="shrink-0 text-right">
-                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Precio</div>
-                            <div className="mt-1 text-xl font-semibold text-white">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Precio</div>
+                            <div className="mt-1 text-lg font-semibold text-white">
                               {formatMoney(product.priceCents, { currency: product.currency })}
                             </div>
                           </div>
@@ -321,17 +321,17 @@ export default async function TiendaPage({
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="max-w-full break-words border border-white/12 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
+                        <span className="max-w-full break-words border border-white/12 bg-white/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-300">
                           {product.category}
                         </span>
                         {product.shockPosition ? (
-                          <span className="max-w-full break-words border border-white/12 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
+                          <span className="max-w-full break-words border border-white/12 bg-white/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-300">
                             {product.shockPosition}
                           </span>
                         ) : null}
                         <span
                           className={[
-                            "max-w-full break-words px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
+                            "max-w-full break-words px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.1em]",
                             product.stockStatus === "in_stock"
                               ? "bg-emerald-900/40 text-emerald-300"
                               : "bg-amber-900/40 text-amber-300",
@@ -342,16 +342,16 @@ export default async function TiendaPage({
                       </div>
                     </div>
 
-                    <div className={["mt-auto grid", isConsultOnly ? "pt-5 gap-2" : "pt-6 gap-3"].join(" ")}>
+                    <div className={["mt-auto grid", isConsultOnly ? "pt-4 gap-2" : "pt-5 gap-2.5"].join(" ")}>
                       {isConsultOnly ? (
-                        <div className="inline-flex min-h-[50px] items-center justify-center rounded-[1rem] border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-center text-sm font-semibold uppercase tracking-[0.14em] text-amber-200">
+                        <div className="inline-flex min-h-[44px] items-center justify-center rounded-[0.85rem] border border-amber-300/25 bg-amber-300/10 px-3.5 py-2.5 text-center text-xs font-semibold uppercase tracking-[0.12em] text-amber-200">
                           Consultar disponibilidad
                         </div>
                       ) : null}
                       <Link
                         href={`/tienda/${encodeURIComponent(product.slug)}`}
                         prefetch={false}
-                        className="inline-flex min-h-[50px] w-full items-center justify-center rounded-[1rem] border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
+                        className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[0.85rem] border border-zinc-200 bg-white px-3.5 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
                       >
                         Ver detalles →
                       </Link>
@@ -359,7 +359,7 @@ export default async function TiendaPage({
                         <AddToCartButton
                           productSlug={product.slug}
                           product={product}
-                          className="min-h-[50px] w-full rounded-[1rem] py-3"
+                          className="min-h-[44px] w-full rounded-[0.85rem] py-2.5"
                         />
                       ) : null}
                     </div>
