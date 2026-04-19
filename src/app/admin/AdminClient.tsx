@@ -623,6 +623,8 @@ export function AdminClient() {
   const [inventoryInput, setInventoryInput] = useState("");
   const [uploadingImages, setUploadingImages] = useState(false);
   const [migratingLegacyImages, setMigratingLegacyImages] = useState(false);
+  const [auditingProducts, setAuditingProducts] = useState(false);
+  const [repairingProducts, setRepairingProducts] = useState(false);
   const [productSearch, setProductSearch] = useState("");
 
   const [tab, setTab] = useState<"dashboard" | "products" | "payments" | "orders" | "security">("dashboard");
@@ -1388,6 +1390,81 @@ export function AdminClient() {
     }
   }
 
+  async function auditCatalog() {
+    if (!authHeader || auditingProducts) return;
+    setAuditingProducts(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/products/audit", {
+        method: "GET",
+        headers: {
+          Authorization: authHeader,
+        },
+      });
+      if (res.status === 401) {
+        clearStoredAuth();
+        setAuthHeader(null);
+        setError("Credenciales inválidas o no configuradas.");
+        return;
+      }
+      const body = (await res.json()) as {
+        totalProducts?: number;
+        productsWithLegacyImages?: number;
+        legacyImagesTotal?: number;
+        productsWithoutImages?: number;
+        invalidDocs?: number;
+      };
+      if (!res.ok) {
+        setError("No se pudo auditar el catálogo.");
+        return;
+      }
+      const summary = [
+        `Catálogo: ${body.totalProducts ?? 0} repuesto(s).`,
+        `Legacy: ${body.productsWithLegacyImages ?? 0} repuesto(s), ${body.legacyImagesTotal ?? 0} imagen(es).`,
+        `Sin imágenes: ${body.productsWithoutImages ?? 0}.`,
+        `Docs inválidos: ${body.invalidDocs ?? 0}.`,
+      ].join(" ");
+      setSavedNotice(summary);
+      window.setTimeout(() => setSavedNotice(null), 5200);
+    } catch {
+      setError("No se pudo auditar el catálogo.");
+    } finally {
+      setAuditingProducts(false);
+    }
+  }
+
+  async function repairCatalog() {
+    if (!authHeader || repairingProducts) return;
+    setRepairingProducts(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/products/repair", {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+        },
+      });
+      if (res.status === 401) {
+        clearStoredAuth();
+        setAuthHeader(null);
+        setError("Credenciales inválidas o no configuradas.");
+        return;
+      }
+      const body = (await res.json()) as { message?: string };
+      if (!res.ok) {
+        setError(body.message || "No se pudo normalizar el catálogo.");
+        return;
+      }
+      setSavedNotice(body.message || "Catálogo normalizado.");
+      window.setTimeout(() => setSavedNotice(null), 4200);
+      await load(authHeader);
+    } catch {
+      setError("No se pudo normalizar el catálogo.");
+    } finally {
+      setRepairingProducts(false);
+    }
+  }
+
   function moveDraftImage(index: number, direction: -1 | 1) {
     setDraft((current) => {
       const imageUrls = getProductImageUrls(current);
@@ -1863,6 +1940,22 @@ export function AdminClient() {
                 ) : null}
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="inline-flex h-11 items-center justify-center border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={auditCatalog}
+                  disabled={auditingProducts || state === "loading"}
+                >
+                  {auditingProducts ? "Auditando..." : "Auditar catálogo"}
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex h-11 items-center justify-center border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={repairCatalog}
+                  disabled={repairingProducts || state === "loading"}
+                >
+                  {repairingProducts ? "Normalizando..." : "Normalizar catálogo"}
+                </button>
                 <button
                   type="button"
                   className="inline-flex h-11 items-center justify-center border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"

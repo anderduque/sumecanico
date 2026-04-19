@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { getProductCoverImage, getProductImageUrls, type Product } from "@/lib/productTypes";
@@ -339,6 +339,18 @@ function removeUndefined<T extends Record<string, unknown>>(value: T) {
   return out as T;
 }
 
+async function readProductsFile(): Promise<Product[]> {
+  const raw = await readFile(productsFilePath, "utf8");
+  const parsed = JSON.parse(raw) as unknown;
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter(isProduct).map(normalizeProduct);
+}
+
+async function writeProductsFile(products: Product[]) {
+  await mkdir(path.dirname(productsFilePath), { recursive: true });
+  await writeFile(productsFilePath, `${JSON.stringify(products, null, 2)}\n`, "utf8");
+}
+
 async function getProductsUncached(): Promise<Product[]> {
   const db = getFirestoreDb();
   if (db) {
@@ -349,18 +361,22 @@ async function getProductsUncached(): Promise<Product[]> {
         .filter(isProduct)
         .map(normalizeProduct)
         .sort((a: Product, b: Product) => a.name.localeCompare(b.name));
+      try {
+        await writeProductsFile(list);
+      } catch {
+      }
       return list;
     } catch (err) {
-      throw wrapStoreReadError(err);
+      try {
+        return await readProductsFile();
+      } catch {
+        throw wrapStoreReadError(err);
+      }
     }
   }
 
   try {
-    const raw = await readFile(productsFilePath, "utf8");
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    const list = parsed.filter(isProduct).map(normalizeProduct);
-    return list;
+    return await readProductsFile();
   } catch (err) {
     throw wrapStoreReadError(err);
   }
@@ -433,6 +449,29 @@ async function getProductBySlugUncached(slug: string): Promise<Product | undefin
       if (!normalizedLookup) return undefined;
       return list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
     } catch (err) {
+      try {
+        const list = await getProducts();
+        for (const candidate of candidates) {
+          const exact = list.find((p) => p.slug === candidate);
+          if (exact) return exact;
+        }
+        if (normalizedLookup) {
+          const normalizedMatch = list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
+          if (normalizedMatch) return normalizedMatch;
+        }
+      } catch {}
+
+      try {
+        const list = await readProductsFile();
+        for (const candidate of candidates) {
+          const exact = list.find((p) => p.slug === candidate);
+          if (exact) return exact;
+        }
+        if (normalizedLookup) {
+          return list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
+        }
+      } catch {}
+
       throw wrapStoreReadError(err);
     }
   }
@@ -534,6 +573,14 @@ export async function upsertProduct(next: Product) {
           } as Record<string, unknown>),
           { merge: true },
         );
+      try {
+        const list = await readProductsFile();
+        const bySlug = new Map<string, Product>(list.map((p) => [p.slug, p]));
+        bySlug.set(product.slug, product);
+        await writeProductsFile(
+          Array.from(bySlug.values()).sort((a: Product, b: Product) => a.name.localeCompare(b.name)),
+        );
+      } catch {}
       revalidateTag("products", "max");
       return;
     } catch (err) {
@@ -555,6 +602,10 @@ export async function deleteProduct(slug: string) {
   if (db) {
     try {
       await db.collection("products").doc(cleaned).delete();
+      try {
+        const list = await readProductsFile();
+        await writeProductsFile(list.filter((p) => p.slug !== cleaned));
+      } catch {}
       revalidateTag("products", "max");
       return;
     } catch (err) {
