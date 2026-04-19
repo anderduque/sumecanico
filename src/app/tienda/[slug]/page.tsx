@@ -7,9 +7,60 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { ProductDetailActions } from "@/components/ProductDetailActions";
 import { formatMoney } from "@/lib/money";
 import { getProductCoverImage, getProductImageUrls } from "@/lib/productTypes";
-import { getProductBySlug } from "@/lib/productsStore";
+import { getProductBySlug, getProductsNoCache } from "@/lib/productsStore";
 
 export const runtime = "nodejs";
+
+function normalizeSlug(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildSlugCandidates(rawSlug: string) {
+  const direct = rawSlug.trim();
+  const candidates = new Set<string>();
+  if (direct) candidates.add(direct);
+  try {
+    const decoded = decodeURIComponent(direct);
+    if (decoded.trim()) candidates.add(decoded.trim());
+  } catch {
+    // ignore malformed URI
+  }
+  const normalized = normalizeSlug(direct);
+  if (normalized) candidates.add(normalized);
+  return Array.from(candidates);
+}
+
+async function getProductBySlugResilient(rawSlug: string) {
+  const candidates = buildSlugCandidates(rawSlug);
+  const normalizedRequested = normalizeSlug(rawSlug);
+
+  for (const candidate of candidates) {
+    try {
+      const direct = await getProductBySlug(candidate);
+      if (direct) return direct;
+    } catch {
+      // fallback below
+    }
+  }
+
+  try {
+    const list = await getProductsNoCache();
+    for (const candidate of candidates) {
+      const exact = list.find((item) => item.slug === candidate);
+      if (exact) return exact;
+    }
+    if (!normalizedRequested) return undefined;
+    return list.find((item) => normalizeSlug(item.slug) === normalizedRequested);
+  } catch {
+    return undefined;
+  }
+}
 
 export async function generateMetadata({
   params,
@@ -17,7 +68,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const product = await getProductBySlugResilient(slug);
   if (!product) return { title: "Repuesto" };
   return { title: product.name, description: product.summary };
 }
@@ -35,7 +86,7 @@ export default async function ProductoPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug.trim());
+  const product = await getProductBySlugResilient(slug.trim());
 
   if (!product) notFound();
 
