@@ -7,9 +7,11 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { ProductDetailActions } from "@/components/ProductDetailActions";
 import { formatMoney } from "@/lib/money";
 import { getProductCoverImage, getProductImageUrls } from "@/lib/productTypes";
-import { getProductBySlug, getProductsNoCache } from "@/lib/productsStore";
+import { getProductsNoCache } from "@/lib/productsStore";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function normalizeSlug(value: string) {
   return value
@@ -39,15 +41,6 @@ function buildSlugCandidates(rawSlug: string) {
 async function getProductBySlugResilient(rawSlug: string) {
   const candidates = buildSlugCandidates(rawSlug);
   const normalizedRequested = normalizeSlug(rawSlug);
-
-  for (const candidate of candidates) {
-    try {
-      const direct = await getProductBySlug(candidate);
-      if (direct) return direct;
-    } catch {
-      // fallback below
-    }
-  }
 
   try {
     const list = await getProductsNoCache();
