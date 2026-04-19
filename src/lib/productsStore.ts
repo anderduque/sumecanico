@@ -444,6 +444,10 @@ export async function getProductsNoCache(): Promise<Product[]> {
 }
 
 function normalizeProduct(product: Product): Product {
+  const base = product as unknown as Record<string, unknown>;
+  const withoutUpdatedAt = { ...base };
+  delete (withoutUpdatedAt as { updatedAt?: unknown }).updatedAt;
+  const safeProduct = withoutUpdatedAt as Product;
   const imageUrls = getProductImageUrls(product).map(normalizeProductImageUrl);
   const normalizedCategory = product.category.trim();
   const rawShockPosition = typeof product.shockPosition === "string" ? product.shockPosition.trim().toLowerCase() : "";
@@ -451,7 +455,7 @@ function normalizeProduct(product: Product): Product {
     rawShockPosition === "delantero" || rawShockPosition === "trasero" ? rawShockPosition : undefined;
   const normalizedShockBrand = normalizeShockBrandValue(product.shockBrand);
   return {
-    ...product,
+    ...safeProduct,
     slug: product.slug.trim(),
     name: product.name.trim(),
     category: normalizedCategory,
