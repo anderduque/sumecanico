@@ -216,6 +216,7 @@ export function StoreFilters({
             {hasActiveFilters ? (
               <Link
                 href="/tienda"
+                prefetch={false}
                 className="inline-flex min-h-[50px] items-center justify-center rounded-[1rem] border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50"
               >
                 Limpiar

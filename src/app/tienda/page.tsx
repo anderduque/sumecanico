@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 };
 
 export const runtime = "nodejs";
+export const revalidate = 60;
 const pageSize = 20;
 
 function normalizeFilterValue(value?: string) {
@@ -25,6 +26,13 @@ function isNonEmptyString(value: string | undefined): value is string {
 
 function uniqueSortedStrings(values: Array<string | undefined>) {
   return Array.from(new Set(values.filter(isNonEmptyString))).sort((a, b) => a.localeCompare(b));
+}
+
+function buildPaginationWindow(currentPage: number, totalPages: number) {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+  if (currentPage <= 4) return [1, 2, 3, 4, 5, totalPages];
+  if (currentPage >= totalPages - 3) return [1, totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  return [1, currentPage - 1, currentPage, currentPage + 1, totalPages];
 }
 
 export default async function TiendaPage({
@@ -49,24 +57,26 @@ export default async function TiendaPage({
   const pricing = normalizeFilterValue(resolvedSearchParams?.pricing);
   const brand = normalizeFilterValue(resolvedSearchParams?.brand);
   const position = normalizeFilterValue(resolvedSearchParams?.position);
-  const list = products.filter((p) => {
+  const list: typeof products = [];
+  for (const product of products) {
     if (q) {
-      const haystack = `${p.name} ${p.category} ${p.summary} ${p.sku ?? ""} ${p.shockBrand ?? ""}`.toLowerCase();
-      if (!haystack.includes(q)) return false;
+      const haystack = `${product.name} ${product.category} ${product.summary} ${product.sku ?? ""} ${product.shockBrand ?? ""}`.toLowerCase();
+      if (!haystack.includes(q)) continue;
     }
-    if (category && p.category !== category) return false;
-    if (stock && p.stockStatus !== stock) return false;
-    if (pricing && (p.pricingMode ?? "fixed") !== pricing) return false;
-    if (brand && p.shockBrand !== brand) return false;
-    if (position && p.shockPosition !== position) return false;
-    return true;
-  });
+    if (category && product.category !== category) continue;
+    if (stock && product.stockStatus !== stock) continue;
+    if (pricing && (product.pricingMode ?? "fixed") !== pricing) continue;
+    if (brand && product.shockBrand !== brand) continue;
+    if (position && product.shockPosition !== position) continue;
+    list.push(product);
+  }
   const requestedPage = Number.parseInt(resolvedSearchParams?.page ?? "1", 10);
   const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
   const currentPage =
     Number.isFinite(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, totalPages) : 1;
   const startIndex = (currentPage - 1) * pageSize;
   const visibleProducts = list.slice(startIndex, startIndex + pageSize);
+  const paginationPages = buildPaginationWindow(currentPage, totalPages);
   const hasActiveFilters = Boolean(q || category || stock || pricing || brand || position);
 
   function buildPageHref(page: number) {
@@ -221,9 +231,10 @@ export default async function TiendaPage({
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
                     href={buildPageHref(Math.max(1, currentPage - 1))}
+                    prefetch={false}
                     aria-disabled={currentPage === 1}
                     className={[
-                      "inline-flex items-center justify-center rounded-[1rem] border px-4 py-2.5 text-sm font-semibold transition",
+                      "inline-flex min-h-[44px] items-center justify-center rounded-[1rem] border px-4 py-2.5 text-sm font-semibold transition",
                       currentPage === 1
                         ? "pointer-events-none border-zinc-200 bg-white text-zinc-400"
                         : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
@@ -236,9 +247,10 @@ export default async function TiendaPage({
                   </div>
                   <Link
                     href={buildPageHref(Math.min(totalPages, currentPage + 1))}
+                    prefetch={false}
                     aria-disabled={currentPage === totalPages}
                     className={[
-                      "inline-flex items-center justify-center rounded-[1rem] border px-4 py-2.5 text-sm font-semibold transition",
+                      "inline-flex min-h-[44px] items-center justify-center rounded-[1rem] border px-4 py-2.5 text-sm font-semibold transition",
                       currentPage === totalPages
                         ? "pointer-events-none border-zinc-200 bg-white text-zinc-400"
                         : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
@@ -337,6 +349,7 @@ export default async function TiendaPage({
                       ) : null}
                       <Link
                         href={`/tienda/${encodeURIComponent(product.slug)}`}
+                        prefetch={false}
                         className="inline-flex min-h-[50px] w-full items-center justify-center rounded-[1rem] border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
                       >
                         Ver detalles →
@@ -363,25 +376,60 @@ export default async function TiendaPage({
 
           {totalPages > 1 ? (
             <div className="mt-10 flex justify-center">
-              <div className="flex flex-wrap items-center gap-2">
-                {Array.from({ length: totalPages }).map((_, index) => {
-                  const page = index + 1;
+              <div className="flex max-w-full items-center gap-2 overflow-x-auto px-1 pb-1">
+                <Link
+                  href={buildPageHref(Math.max(1, currentPage - 1))}
+                  prefetch={false}
+                  aria-disabled={currentPage === 1}
+                  className={[
+                    "inline-flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full border px-3 text-sm font-semibold transition",
+                    currentPage === 1
+                      ? "pointer-events-none border-zinc-200 bg-white text-zinc-400"
+                      : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
+                  ].join(" ")}
+                >
+                  ‹
+                </Link>
+                {paginationPages.map((page, index) => {
                   const active = page === currentPage;
+                  const prev = paginationPages[index - 1];
+                  const showGap = typeof prev === "number" && page - prev > 1;
                   return (
-                    <Link
-                      key={page}
-                      href={buildPageHref(page)}
-                      className={[
-                        "inline-flex h-11 min-w-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition",
-                        active
-                          ? "border-primary bg-primary text-white"
-                          : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
-                      ].join(" ")}
-                    >
-                      {page}
-                    </Link>
+                    <div key={page} className="flex items-center gap-2">
+                      {showGap ? (
+                        <span className="inline-flex h-11 min-w-8 shrink-0 items-center justify-center text-sm font-semibold text-zinc-500">
+                          …
+                        </span>
+                      ) : null}
+                      <Link
+                        href={buildPageHref(page)}
+                        prefetch={false}
+                        aria-current={active ? "page" : undefined}
+                        className={[
+                          "inline-flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full border px-4 text-sm font-semibold transition",
+                          active
+                            ? "border-primary bg-primary text-white"
+                            : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
+                        ].join(" ")}
+                      >
+                        {page}
+                      </Link>
+                    </div>
                   );
                 })}
+                <Link
+                  href={buildPageHref(Math.min(totalPages, currentPage + 1))}
+                  prefetch={false}
+                  aria-disabled={currentPage === totalPages}
+                  className={[
+                    "inline-flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full border px-3 text-sm font-semibold transition",
+                    currentPage === totalPages
+                      ? "pointer-events-none border-zinc-200 bg-white text-zinc-400"
+                      : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
+                  ].join(" ")}
+                >
+                  ›
+                </Link>
               </div>
             </div>
           ) : null}
