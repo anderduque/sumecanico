@@ -425,17 +425,13 @@ async function getProductBySlugUncached(slug: string): Promise<Product | undefin
         if (isProduct(found)) return normalizeProduct(found);
       }
 
-      if (!normalizedLookup) return undefined;
-      const full = await db.collection("products").get();
-      for (const doc of full.docs) {
-        const raw = doc.data() as unknown;
-        if (!isProduct(raw)) continue;
-        const product = normalizeProduct(raw);
-        if (normalizeSlugForLookup(product.slug) === normalizedLookup) {
-          return product;
-        }
+      const list = await getProducts();
+      for (const candidate of candidates) {
+        const exact = list.find((p) => p.slug === candidate);
+        if (exact) return exact;
       }
-      return undefined;
+      if (!normalizedLookup) return undefined;
+      return list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
     } catch (err) {
       throw wrapStoreReadError(err);
     }
