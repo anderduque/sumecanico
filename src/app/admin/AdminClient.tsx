@@ -622,6 +622,7 @@ export function AdminClient() {
   const [priceInput, setPriceInput] = useState("");
   const [inventoryInput, setInventoryInput] = useState("");
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [migratingLegacyImages, setMigratingLegacyImages] = useState(false);
   const [productSearch, setProductSearch] = useState("");
 
   const [tab, setTab] = useState<"dashboard" | "products" | "payments" | "orders" | "security">("dashboard");
@@ -1355,6 +1356,38 @@ export function AdminClient() {
     }
   }
 
+  async function migrateLegacyImages() {
+    if (!authHeader || migratingLegacyImages) return;
+    setMigratingLegacyImages(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/products/migrate-images", {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+        },
+      });
+      if (res.status === 401) {
+        clearStoredAuth();
+        setAuthHeader(null);
+        setError("Credenciales inválidas o no configuradas.");
+        return;
+      }
+      const body = (await res.json()) as { message?: string };
+      if (!res.ok) {
+        setError(body.message || "No se pudo ejecutar la migración de imágenes.");
+        return;
+      }
+      setSavedNotice(body.message || "Migración completada.");
+      window.setTimeout(() => setSavedNotice(null), 3800);
+      await load(authHeader);
+    } catch {
+      setError("No se pudo ejecutar la migración de imágenes.");
+    } finally {
+      setMigratingLegacyImages(false);
+    }
+  }
+
   function moveDraftImage(index: number, direction: -1 | 1) {
     setDraft((current) => {
       const imageUrls = getProductImageUrls(current);
@@ -1829,13 +1862,23 @@ export function AdminClient() {
                   </button>
                 ) : null}
               </div>
-              <button
-                type="button"
-                className="inline-flex h-11 items-center justify-center border border-primary bg-primary px-4 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
-                onClick={startNew}
-              >
-                Nuevo repuesto
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="inline-flex h-11 items-center justify-center border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={migrateLegacyImages}
+                  disabled={migratingLegacyImages || state === "loading"}
+                >
+                  {migratingLegacyImages ? "Migrando imágenes..." : "Migrar imágenes legacy"}
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex h-11 items-center justify-center border border-primary bg-primary px-4 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
+                  onClick={startNew}
+                >
+                  Nuevo repuesto
+                </button>
+              </div>
             </div>
           </div>
 
