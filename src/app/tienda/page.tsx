@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { Container } from "@/components/Container";
 import { StoreFilters } from "@/components/StoreFilters";
+import { StorePaginationNav } from "@/components/StorePaginationNav";
 import { formatMoney } from "@/lib/money";
 import { getProductCoverImage } from "@/lib/productTypes";
 import { getProducts } from "@/lib/productsStore";
@@ -375,63 +376,13 @@ export default async function TiendaPage({
           ) : null}
 
           {totalPages > 1 ? (
-            <div className="mt-10 flex justify-center">
-              <div className="flex max-w-full items-center gap-2 overflow-x-auto px-1 pb-1">
-                <Link
-                  href={buildPageHref(Math.max(1, currentPage - 1))}
-                  prefetch={false}
-                  aria-disabled={currentPage === 1}
-                  className={[
-                    "inline-flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full border px-3 text-sm font-semibold transition",
-                    currentPage === 1
-                      ? "pointer-events-none border-zinc-200 bg-white text-zinc-400"
-                      : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
-                  ].join(" ")}
-                >
-                  ‹
-                </Link>
-                {paginationPages.map((page, index) => {
-                  const active = page === currentPage;
-                  const prev = paginationPages[index - 1];
-                  const showGap = typeof prev === "number" && page - prev > 1;
-                  return (
-                    <div key={page} className="flex items-center gap-2">
-                      {showGap ? (
-                        <span className="inline-flex h-11 min-w-8 shrink-0 items-center justify-center text-sm font-semibold text-zinc-500">
-                          …
-                        </span>
-                      ) : null}
-                      <Link
-                        href={buildPageHref(page)}
-                        prefetch={false}
-                        aria-current={active ? "page" : undefined}
-                        className={[
-                          "inline-flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full border px-4 text-sm font-semibold transition",
-                          active
-                            ? "border-primary bg-primary text-white"
-                            : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
-                        ].join(" ")}
-                      >
-                        {page}
-                      </Link>
-                    </div>
-                  );
-                })}
-                <Link
-                  href={buildPageHref(Math.min(totalPages, currentPage + 1))}
-                  prefetch={false}
-                  aria-disabled={currentPage === totalPages}
-                  className={[
-                    "inline-flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full border px-3 text-sm font-semibold transition",
-                    currentPage === totalPages
-                      ? "pointer-events-none border-zinc-200 bg-white text-zinc-400"
-                      : "border-zinc-300 bg-white text-zinc-900 hover:border-primary hover:text-primary",
-                  ].join(" ")}
-                >
-                  ›
-                </Link>
-              </div>
-            </div>
+            <StorePaginationNav
+              currentPage={currentPage}
+              totalPages={totalPages}
+              previousHref={buildPageHref(Math.max(1, currentPage - 1))}
+              nextHref={buildPageHref(Math.min(totalPages, currentPage + 1))}
+              pageLinks={paginationPages.map((page) => ({ page, href: buildPageHref(page) }))}
+            />
           ) : null}
         </Container>
       </section>
