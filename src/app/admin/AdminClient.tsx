@@ -2731,7 +2731,7 @@ export function AdminClient() {
                         </div>
                         <div className="mt-2 text-sm leading-6 text-zinc-600">
                           {isEditingExisting
-                            ? "Estamos actualizando la informaci&oacute;n del repuesto."
+                            ? "Estamos actualizando la información del repuesto."
                             : "Estamos procesando y guardando el nuevo repuesto."}
                         </div>
                       </div>
