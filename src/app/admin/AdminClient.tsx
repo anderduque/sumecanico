@@ -142,6 +142,14 @@ function slugify(input: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function normalizeSearchText(input: string) {
+  return input
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function validateAdminPassword(value: string) {
   const trimmed = value.trim();
   if (trimmed.length < 8) return "Usa mínimo 8 caracteres.";
@@ -614,6 +622,7 @@ export function AdminClient() {
   const [priceInput, setPriceInput] = useState("");
   const [inventoryInput, setInventoryInput] = useState("");
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
 
   const [tab, setTab] = useState<"dashboard" | "products" | "payments" | "orders" | "security">("dashboard");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -654,6 +663,16 @@ export function AdminClient() {
   const shouldTrackInventory = draft.stockStatus === "in_stock";
   const shouldConsultAvailability = draft.pricingMode === "check_availability";
   const draftImageUrls = useMemo(() => getProductImageUrls(draft), [draft]);
+  const normalizedProductSearch = useMemo(() => normalizeSearchText(productSearch), [productSearch]);
+  const filteredProducts = useMemo(() => {
+    if (!normalizedProductSearch) return products;
+    return products.filter((product) => {
+      const haystack = normalizeSearchText(
+        `${product.name} ${product.slug} ${product.category} ${product.summary} ${product.sku ?? ""} ${product.shockBrand ?? ""}`,
+      );
+      return haystack.includes(normalizedProductSearch);
+    });
+  }, [normalizedProductSearch, products]);
   const compatModelOptions = useMemo(() => {
     if (!compatBrand || !compatBodyStyle) return [];
     const models = vehicleModelsByBrandAndBodyStyle[compatBrand]?.[compatBodyStyle] ?? [];
@@ -698,6 +717,7 @@ export function AdminClient() {
     setPriceInput("");
     setInventoryInput("");
     setUploadingImages(false);
+    setProductSearch("");
     setError(null);
     setState("idle");
     setShowPanel(false);
@@ -1776,7 +1796,7 @@ export function AdminClient() {
 
       {tab === "products" ? (
         <div className="mt-4 border border-zinc-200 bg-white">
-          <div className="sticky top-16 z-40 flex flex-col gap-4 border-b border-zinc-200 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="sticky top-16 z-40 flex flex-col gap-4 border-b border-zinc-200 bg-white px-6 py-5">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
                 Repuestos
@@ -1784,16 +1804,39 @@ export function AdminClient() {
               <div className="mt-2 text-sm text-zinc-600">
                 {state === "loading"
                   ? "Cargando catálogo de repuestos..."
-                  : `${products.length} producto${products.length === 1 ? "" : "s"} cargado${products.length === 1 ? "" : "s"} en el catálogo.`}
+                  : normalizedProductSearch
+                    ? `${filteredProducts.length} de ${products.length} producto${products.length === 1 ? "" : "s"} en resultados.`
+                    : `${products.length} producto${products.length === 1 ? "" : "s"} cargado${products.length === 1 ? "" : "s"} en el catálogo.`}
               </div>
             </div>
-            <button
-              type="button"
-              className="inline-flex items-center justify-center border border-primary bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
-              onClick={startNew}
-            >
-              Nuevo repuesto
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative w-full sm:max-w-md">
+                <input
+                  type="search"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  placeholder="Buscar por nombre, slug, categoría, SKU o marca"
+                  className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 pr-10 text-sm text-zinc-900 outline-none focus:border-primary"
+                />
+                {productSearch.trim() ? (
+                  <button
+                    type="button"
+                    aria-label="Limpiar búsqueda"
+                    onClick={() => setProductSearch("")}
+                    className="absolute inset-y-1.5 right-1.5 inline-flex w-8 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="inline-flex h-11 items-center justify-center border border-primary bg-primary px-4 text-sm font-semibold text-white transition hover:bg-[#981b1f]"
+                onClick={startNew}
+              >
+                Nuevo repuesto
+              </button>
+            </div>
           </div>
 
           {state === "loading" && products.length === 0 ? (
@@ -1811,9 +1854,9 @@ export function AdminClient() {
                 </div>
               ))}
             </div>
-          ) : products.length > 0 ? (
+          ) : filteredProducts.length > 0 ? (
             <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
-              {products.map((p) => (
+              {filteredProducts.map((p) => (
                 <button
                   key={p.slug}
                   type="button"
@@ -1900,6 +1943,10 @@ export function AdminClient() {
                   </div>
                 </button>
               ))}
+            </div>
+          ) : products.length > 0 ? (
+            <div className="px-6 py-10 text-sm text-zinc-600">
+              No encontramos repuestos que coincidan con tu búsqueda.
             </div>
           ) : (
             <div className="px-6 py-10 text-sm text-zinc-600">No hay productos.</div>
