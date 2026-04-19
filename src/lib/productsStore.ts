@@ -198,6 +198,46 @@ function assertProductFitsFirestore(product: Product) {
   }
 }
 
+function getDefaultStorageBucketName() {
+  const explicit = process.env.FIREBASE_STORAGE_BUCKET;
+  if (typeof explicit === "string" && explicit.trim() !== "") return explicit.trim();
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  if (typeof projectId === "string" && projectId.trim() !== "") return `${projectId.trim()}.appspot.com`;
+  return "";
+}
+
+function buildFirebaseStoragePublicUrl(bucket: string, objectPath: string) {
+  const cleanedBucket = bucket.trim();
+  const cleanedObjectPath = objectPath.trim().replace(/^\/+/, "");
+  if (!cleanedBucket || !cleanedObjectPath) return "";
+  return `https://firebasestorage.googleapis.com/v0/b/${cleanedBucket}/o/${encodeURIComponent(cleanedObjectPath)}?alt=media`;
+}
+
+function normalizeProductImageUrl(raw: string) {
+  const value = raw.trim();
+  if (!value) return "";
+  if (value.startsWith("data:")) return value;
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+
+  if (value.startsWith("gs://")) {
+    const withoutScheme = value.slice(5);
+    const slashIndex = withoutScheme.indexOf("/");
+    if (slashIndex <= 0) return value;
+    const bucket = withoutScheme.slice(0, slashIndex);
+    const objectPath = withoutScheme.slice(slashIndex + 1);
+    return buildFirebaseStoragePublicUrl(bucket, objectPath) || value;
+  }
+
+  // Legacy format saved as object path only (e.g. products/slug/file.jpg)
+  if (!value.includes("://")) {
+    const bucket = getDefaultStorageBucketName();
+    const normalized = buildFirebaseStoragePublicUrl(bucket, value);
+    if (normalized) return normalized;
+  }
+
+  return value;
+}
+
 function isProduct(x: unknown): x is Product {
   if (!x || typeof x !== "object") return false;
   const p = x as Product;
@@ -306,7 +346,7 @@ export async function getProductsNoCache(): Promise<Product[]> {
 }
 
 function normalizeProduct(product: Product): Product {
-  const imageUrls = getProductImageUrls(product);
+  const imageUrls = getProductImageUrls(product).map(normalizeProductImageUrl);
   return {
     ...product,
     slug: product.slug.trim(),
