@@ -346,13 +346,12 @@ export default async function TiendaPage({
                           </div>
                         )}
                       </div>
-                      <Link
+                      <a
                         href={`/tienda/${encodeURIComponent(product.slug)}`}
-                        prefetch={false}
                         className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[0.85rem] border border-zinc-200 bg-white px-3.5 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-950 transition hover:border-primary hover:bg-primary hover:text-white"
                       >
                         Ver detalles →
-                      </Link>
+                      </a>
                       {!isConsultOnly ? (
                         <AddToCartButton
                           productSlug={product.slug}
