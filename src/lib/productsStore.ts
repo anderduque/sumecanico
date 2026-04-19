@@ -238,6 +238,29 @@ function normalizeProductImageUrl(raw: string) {
   return value;
 }
 
+const allowedShockBrands: Array<NonNullable<Product["shockBrand"]>> = [
+  "GREBIS",
+  "GREKIS",
+  "NOR",
+  "OKAMI",
+  "TOKICO",
+  "GABRIEL",
+  "MONROE",
+  "OLDMAN EMU",
+  "MASTER KING",
+  "CIC",
+  "TOYOTA ORIGINAL",
+];
+
+function normalizeShockBrandValue(value: unknown): Product["shockBrand"] {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim().toUpperCase();
+  if (!normalized) return undefined;
+  return allowedShockBrands.includes(normalized as NonNullable<Product["shockBrand"]>)
+    ? (normalized as NonNullable<Product["shockBrand"]>)
+    : undefined;
+}
+
 function normalizeSlugForLookup(value: string) {
   return value
     .trim()
@@ -260,7 +283,50 @@ function buildSlugCandidates(rawSlug: string) {
   }
   const normalized = normalizeSlugForLookup(direct);
   if (normalized) candidates.add(normalized);
+
+  // Legacy alternates: some links were published with singular/plural differences.
+  for (const candidate of Array.from(candidates)) {
+    const normalizedCandidate = normalizeSlugForLookup(candidate);
+    if (normalizedCandidate.startsWith("amortiguadores-")) {
+      candidates.add(normalizedCandidate.replace(/^amortiguadores-/, "amortiguador-"));
+    }
+    if (normalizedCandidate.startsWith("amortiguador-")) {
+      candidates.add(normalizedCandidate.replace(/^amortiguador-/, "amortiguadores-"));
+    }
+  }
+
   return Array.from(candidates);
+}
+
+function numericTokenEquivalent(a: string, b: string) {
+  if (a === b) return true;
+  if (!/^\d+$/.test(a) || !/^\d+$/.test(b)) return false;
+  if (a.length === 2 && b.length === 4 && b.endsWith(a)) return true;
+  if (b.length === 2 && a.length === 4 && a.endsWith(b)) return true;
+  return false;
+}
+
+function findBestSlugTokenMatch(list: Product[], normalizedLookup: string) {
+  const requestedTokens = normalizedLookup.split("-").filter(Boolean);
+  if (requestedTokens.length < 3) return undefined;
+
+  let best: { product: Product; score: number } | undefined;
+
+  for (const item of list) {
+    const itemTokens = normalizeSlugForLookup(item.slug).split("-").filter(Boolean);
+    if (itemTokens.length === 0) continue;
+
+    let matched = 0;
+    for (const token of requestedTokens) {
+      const hasToken = itemTokens.some((candidate) => numericTokenEquivalent(token, candidate));
+      if (hasToken) matched += 1;
+    }
+
+    const score = matched / requestedTokens.length;
+    if (!best || score > best.score) best = { product: item, score };
+  }
+
+  return best && best.score >= 0.72 ? best.product : undefined;
 }
 
 function isProduct(x: unknown): x is Product {
@@ -270,18 +336,9 @@ function isProduct(x: unknown): x is Product {
   if (typeof p.name !== "string" || p.name.trim() === "") return false;
   if (typeof p.summary !== "string") return false;
   if (typeof p.category !== "string") return false;
-  if (p.shockPosition !== undefined && p.shockPosition !== "delantero" && p.shockPosition !== "trasero") {
-    return false;
-  }
+  if (p.shockPosition !== undefined && typeof p.shockPosition !== "string") return false;
   if (p.sku !== undefined && typeof p.sku !== "string") return false;
-  if (
-    p.shockBrand !== undefined &&
-    !["GREKIS", "NOR", "OKAMI", "TOKICO", "GABRIEL", "MONROE", "OLDMAN EMU", "MASTER KING", "CIC", "TOYOTA ORIGINAL"].includes(
-      p.shockBrand,
-    )
-  ) {
-    return false;
-  }
+  if (p.shockBrand !== undefined && typeof p.shockBrand !== "string") return false;
   if (p.imageUrl !== undefined && typeof p.imageUrl !== "string") return false;
   if (p.imageUrls !== undefined) {
     if (!Array.isArray(p.imageUrls)) return false;
@@ -388,15 +445,19 @@ export async function getProductsNoCache(): Promise<Product[]> {
 
 function normalizeProduct(product: Product): Product {
   const imageUrls = getProductImageUrls(product).map(normalizeProductImageUrl);
+  const normalizedCategory = product.category.trim();
+  const rawShockPosition = typeof product.shockPosition === "string" ? product.shockPosition.trim().toLowerCase() : "";
+  const normalizedShockPosition =
+    rawShockPosition === "delantero" || rawShockPosition === "trasero" ? rawShockPosition : undefined;
+  const normalizedShockBrand = normalizeShockBrandValue(product.shockBrand);
   return {
     ...product,
     slug: product.slug.trim(),
     name: product.name.trim(),
-    category: product.category.trim(),
-    shockPosition:
-      product.category.trim() === "Amortiguadores" ? product.shockPosition : undefined,
-    sku: product.category.trim() === "Amortiguadores" ? product.sku?.trim() || undefined : undefined,
-    shockBrand: product.category.trim() === "Amortiguadores" ? product.shockBrand : undefined,
+    category: normalizedCategory,
+    shockPosition: normalizedCategory === "Amortiguadores" ? normalizedShockPosition : undefined,
+    sku: normalizedCategory === "Amortiguadores" ? product.sku?.trim() || undefined : undefined,
+    shockBrand: normalizedCategory === "Amortiguadores" ? normalizedShockBrand : undefined,
     pricingMode: product.pricingMode === "check_availability" ? "check_availability" : "fixed",
     currency: product.currency.trim().toUpperCase(),
     imageUrl: getProductCoverImage({ imageUrl: product.imageUrl, imageUrls }),
@@ -447,7 +508,9 @@ async function getProductBySlugUncached(slug: string): Promise<Product | undefin
         if (exact) return exact;
       }
       if (!normalizedLookup) return undefined;
-      return list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
+      const normalizedExact = list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
+      if (normalizedExact) return normalizedExact;
+      return findBestSlugTokenMatch(list, normalizedLookup);
     } catch (err) {
       try {
         const list = await getProducts();
@@ -458,6 +521,8 @@ async function getProductBySlugUncached(slug: string): Promise<Product | undefin
         if (normalizedLookup) {
           const normalizedMatch = list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
           if (normalizedMatch) return normalizedMatch;
+          const fuzzyMatch = findBestSlugTokenMatch(list, normalizedLookup);
+          if (fuzzyMatch) return fuzzyMatch;
         }
       } catch {}
 
@@ -468,7 +533,9 @@ async function getProductBySlugUncached(slug: string): Promise<Product | undefin
           if (exact) return exact;
         }
         if (normalizedLookup) {
-          return list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
+          const normalizedMatch = list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
+          if (normalizedMatch) return normalizedMatch;
+          return findBestSlugTokenMatch(list, normalizedLookup);
         }
       } catch {}
 
@@ -482,7 +549,9 @@ async function getProductBySlugUncached(slug: string): Promise<Product | undefin
     if (exact) return exact;
   }
   if (!normalizedLookup) return undefined;
-  return list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
+  const normalizedExact = list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
+  if (normalizedExact) return normalizedExact;
+  return findBestSlugTokenMatch(list, normalizedLookup);
 }
 
 export const getProductBySlug = unstable_cache(getProductBySlugUncached, ["productBySlug"], {
