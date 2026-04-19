@@ -13,6 +13,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+function isUnoptimizedImage(value: string) {
+  return (
+    value.startsWith("data:") ||
+    value.includes("firebasestorage.googleapis.com") ||
+    value.includes(".firebasestorage.app/")
+  );
+}
+
 function normalizeSlug(value: string) {
   return value
     .trim()
@@ -116,19 +124,15 @@ export default async function ProductoPage({
       <section className="relative isolate overflow-hidden bg-zinc-950 text-white">
         <div className="absolute inset-0">
           {coverImage ? (
-            coverImage.startsWith("data:") ? (
-              <Image
-                src={coverImage}
-                alt={product.name}
-                fill
-                unoptimized
-                className="object-cover"
-                sizes="100vw"
-                priority
-              />
-            ) : (
-              <Image src={coverImage} alt={product.name} fill className="object-cover" sizes="100vw" priority />
-            )
+            <Image
+              src={coverImage}
+              alt={product.name}
+              fill
+              unoptimized={isUnoptimizedImage(coverImage)}
+              className="object-cover"
+              sizes="100vw"
+              priority
+            />
           ) : (
             <Image src="/module-store-hero.png" alt={product.name} fill className="object-cover" sizes="100vw" priority />
           )}

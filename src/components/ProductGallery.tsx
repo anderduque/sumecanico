@@ -15,6 +15,11 @@ export function ProductGallery({ name, images }: ProductGalleryProps) {
 
   if (!selectedImage) return null;
 
+  const isUnoptimizedImage = (value: string) =>
+    value.startsWith("data:") ||
+    value.includes("firebasestorage.googleapis.com") ||
+    value.includes(".firebasestorage.app/");
+
   return (
     <div className="overflow-hidden border border-zinc-200 bg-white">
       <div className="border-b border-zinc-200 px-4 py-3 sm:px-6 sm:py-4">
@@ -47,7 +52,7 @@ export function ProductGallery({ name, images }: ProductGalleryProps) {
                           src={imageUrl}
                           alt={`${name} miniatura ${index + 1}`}
                           fill
-                          unoptimized={imageUrl.startsWith("data:")}
+                          unoptimized={isUnoptimizedImage(imageUrl)}
                           className="object-cover"
                           sizes="(min-width: 1024px) 72px, 64px"
                         />
@@ -74,7 +79,7 @@ export function ProductGallery({ name, images }: ProductGalleryProps) {
                 alt={`${name} imagen ${selectedIndex + 1}`}
                 fill
                 priority={selectedIndex === 0}
-                unoptimized={selectedImage.startsWith("data:")}
+                unoptimized={isUnoptimizedImage(selectedImage)}
                 className={hasMultipleImages ? "object-contain p-3 sm:p-6" : "object-contain p-2 sm:p-4"}
                 sizes={hasMultipleImages ? "(min-width: 1024px) 42rem, 100vw" : "100vw"}
               />
