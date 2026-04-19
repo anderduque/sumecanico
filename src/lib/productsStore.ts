@@ -238,6 +238,31 @@ function normalizeProductImageUrl(raw: string) {
   return value;
 }
 
+function normalizeSlugForLookup(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildSlugCandidates(rawSlug: string) {
+  const candidates = new Set<string>();
+  const direct = rawSlug.trim();
+  if (direct) candidates.add(direct);
+  try {
+    const decoded = decodeURIComponent(direct);
+    if (decoded.trim()) candidates.add(decoded.trim());
+  } catch {
+    // ignore malformed URI sequences
+  }
+  const normalized = normalizeSlugForLookup(direct);
+  if (normalized) candidates.add(normalized);
+  return Array.from(candidates);
+}
+
 function isProduct(x: unknown): x is Product {
   if (!x || typeof x !== "object") return false;
   const p = x as Product;
@@ -377,29 +402,52 @@ export const getProducts = unstable_cache(getProductsUncached, ["products"], {
 });
 
 async function getProductBySlugUncached(slug: string): Promise<Product | undefined> {
+  const candidates = buildSlugCandidates(slug);
+  const normalizedLookup = normalizeSlugForLookup(slug);
   const db = getFirestoreDb();
   if (db) {
     try {
-      const byId = await db.collection("products").doc(slug).get();
-      if (byId.exists) {
-        const data = byId.data() as unknown;
-        return isProduct(data) ? normalizeProduct(data) : undefined;
+      for (const candidate of candidates) {
+        const byId = await db.collection("products").doc(candidate).get();
+        if (byId.exists) {
+          const data = byId.data() as unknown;
+          if (isProduct(data)) return normalizeProduct(data);
+        }
       }
 
-      const snap = await db
-        .collection("products")
-        .where("slug", "==", slug)
-        .limit(1)
-        .get();
-      const found = snap.docs[0]?.data() as unknown;
-      return isProduct(found) ? normalizeProduct(found) : undefined;
+      for (const candidate of candidates) {
+        const snap = await db
+          .collection("products")
+          .where("slug", "==", candidate)
+          .limit(1)
+          .get();
+        const found = snap.docs[0]?.data() as unknown;
+        if (isProduct(found)) return normalizeProduct(found);
+      }
+
+      if (!normalizedLookup) return undefined;
+      const full = await db.collection("products").get();
+      for (const doc of full.docs) {
+        const raw = doc.data() as unknown;
+        if (!isProduct(raw)) continue;
+        const product = normalizeProduct(raw);
+        if (normalizeSlugForLookup(product.slug) === normalizedLookup) {
+          return product;
+        }
+      }
+      return undefined;
     } catch (err) {
       throw wrapStoreReadError(err);
     }
   }
 
   const list = await getProducts();
-  return list.find((p) => p.slug === slug);
+  for (const candidate of candidates) {
+    const exact = list.find((p) => p.slug === candidate);
+    if (exact) return exact;
+  }
+  if (!normalizedLookup) return undefined;
+  return list.find((p) => normalizeSlugForLookup(p.slug) === normalizedLookup);
 }
 
 export const getProductBySlug = unstable_cache(getProductBySlugUncached, ["productBySlug"], {

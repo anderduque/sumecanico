@@ -309,15 +309,6 @@ export default async function TiendaPage({
                             {product.name}
                           </h2>
                         </div>
-
-                        {!isConsultOnly ? (
-                          <div className="shrink-0 text-right">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Precio</div>
-                            <div className="mt-1 text-lg font-semibold text-white">
-                              {formatMoney(product.priceCents, { currency: product.currency })}
-                            </div>
-                          </div>
-                        ) : null}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
@@ -343,11 +334,18 @@ export default async function TiendaPage({
                     </div>
 
                     <div className={["mt-auto grid", isConsultOnly ? "pt-4 gap-2" : "pt-5 gap-2.5"].join(" ")}>
-                      {isConsultOnly ? (
-                        <div className="inline-flex min-h-[44px] items-center justify-center rounded-[0.85rem] border border-amber-300/25 bg-amber-300/10 px-3.5 py-2.5 text-center text-xs font-semibold uppercase tracking-[0.12em] text-amber-200">
-                          Consultar disponibilidad
-                        </div>
-                      ) : null}
+                      <div className="rounded-[0.85rem] border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Precio</div>
+                        {!isConsultOnly ? (
+                          <div className="mt-1 text-base font-semibold text-white">
+                            {formatMoney(product.priceCents, { currency: product.currency })}
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-sm font-semibold text-amber-200">
+                            Consultar disponibilidad
+                          </div>
+                        )}
+                      </div>
                       <Link
                         href={`/tienda/${encodeURIComponent(product.slug)}`}
                         prefetch={false}
