@@ -1,8 +1,7 @@
-import { Container } from "@/components/Container";
+"use client";
 
-function Block({ className }: { className: string }) {
-  return <div className={`animate-pulse rounded-xl bg-white/10 ${className}`} />;
-}
+import Image from "next/image";
+import { Container } from "@/components/Container";
 
 function SpinnerIcon({ className = "" }: { className?: string }) {
   return (
@@ -13,53 +12,51 @@ function SpinnerIcon({ className = "" }: { className?: string }) {
   );
 }
 
-export default function Loading() {
+export default function TiendaLoading() {
   return (
-    <div className="bg-[#121212] text-white">
-      <section className="border-b border-white/10 bg-zinc-950">
-        <Container className="py-16 sm:py-20">
-          <div className="mb-8 flex justify-center">
-            <div className="flex w-full max-w-xl items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.65)] backdrop-blur">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-primary/25 bg-primary/10 text-primary">
-                <SpinnerIcon className="h-5 w-5 animate-spin" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold uppercase tracking-[0.16em] text-primary/90">
-                  Cargando tienda
-                </div>
-                <div className="mt-1 text-sm text-zinc-300">
-                  Estamos trayendo los repuestos y preparando el cat&aacute;logo.
-                </div>
-              </div>
-            </div>
+    <div className="bg-[#f6f3ef]">
+      <section className="relative isolate overflow-hidden bg-zinc-950 text-white">
+        <div className="absolute inset-0">
+          <Image src="/module-store-hero.png" alt="" fill className="object-cover" sizes="100vw" priority />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,18,18,0.76)_0%,rgba(18,18,18,0.84)_48%,rgba(18,18,18,0.94)_100%)]" />
+        </div>
+        <Container className="relative py-12 sm:py-16">
+          <div className="inline-flex items-center gap-3 rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white shadow-2xl">
+            <SpinnerIcon className="h-5 w-5 animate-spin" />
+            <div>Cargando repuestos...</div>
           </div>
-          <Block className="h-3 w-36" />
-          <Block className="mt-5 h-12 w-full max-w-3xl" />
-          <Block className="mt-4 h-5 w-full max-w-2xl" />
-          <Block className="mt-3 h-5 w-full max-w-xl" />
         </Container>
       </section>
 
-      <Container className="py-12 sm:py-16">
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="overflow-hidden border border-white/10 bg-[#1a1a1a]/95 p-6"
-            >
-              <Block className="aspect-[16/10] w-full bg-white/8" />
-              <Block className="mt-6 h-7 w-3/4 bg-white/12" />
-              <div className="mt-4 flex gap-2">
-                <Block className="h-6 w-28 rounded-full bg-white/8" />
-                <Block className="h-6 w-20 rounded-full bg-white/8" />
-              </div>
-              <Block className="mt-6 h-4 w-full bg-white/8" />
-              <Block className="mt-2 h-4 w-5/6 bg-white/8" />
-              <Block className="mt-6 h-11 w-full rounded-none bg-white/14" />
-            </div>
-          ))}
+      <section className="relative isolate bg-[#f6f3ef]">
+        <div className="absolute inset-0 opacity-15">
+          <Image src="/home-engine-detail-optimized.jpg" alt="" fill className="object-cover" sizes="100vw" />
         </div>
-      </Container>
+        <Container className="relative py-10 sm:py-12">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 9 }).map((_, index) => (
+              <div
+                key={index}
+                className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#1a1a1a]/95"
+              >
+                <div className="aspect-[16/10] animate-pulse bg-zinc-900" />
+                <div className="p-6">
+                  <div className="h-7 w-4/5 animate-pulse rounded bg-white/10" />
+                  <div className="mt-4 flex gap-2">
+                    <div className="h-6 w-28 animate-pulse rounded bg-white/10" />
+                    <div className="h-6 w-20 animate-pulse rounded bg-white/10" />
+                  </div>
+                  <div className="mt-6 grid gap-3">
+                    <div className="h-12 w-full animate-pulse rounded-[1rem] bg-white/10" />
+                    <div className="h-12 w-full animate-pulse rounded-[1rem] bg-white/10" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
     </div>
   );
 }
+
