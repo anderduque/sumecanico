@@ -241,6 +241,7 @@ function normalizeProductImageUrl(raw: string) {
 const allowedShockBrands: Array<NonNullable<Product["shockBrand"]>> = [
   "GREBIS",
   "GREKIS",
+  "BELUCI",
   "NOR",
   "OKAMI",
   "TOKICO",
@@ -450,6 +451,10 @@ function normalizeProduct(product: Product): Product {
   const safeProduct = withoutUpdatedAt as Product;
   const imageUrls = getProductImageUrls(product).map(normalizeProductImageUrl);
   const normalizedCategory = product.category.trim();
+  const usesShockDetails =
+    normalizedCategory === "Amortiguadores" ||
+    normalizedCategory === "Guardapolvo" ||
+    normalizedCategory === "Resorte Espiral";
   const rawShockPosition = typeof product.shockPosition === "string" ? product.shockPosition.trim().toLowerCase() : "";
   const normalizedShockPosition =
     rawShockPosition === "delantero" || rawShockPosition === "trasero" ? rawShockPosition : undefined;
@@ -459,9 +464,9 @@ function normalizeProduct(product: Product): Product {
     slug: product.slug.trim(),
     name: product.name.trim(),
     category: normalizedCategory,
-    shockPosition: normalizedCategory === "Amortiguadores" ? normalizedShockPosition : undefined,
-    sku: normalizedCategory === "Amortiguadores" ? product.sku?.trim() || undefined : undefined,
-    shockBrand: normalizedCategory === "Amortiguadores" ? normalizedShockBrand : undefined,
+    shockPosition: usesShockDetails ? normalizedShockPosition : undefined,
+    sku: usesShockDetails ? product.sku?.trim() || undefined : undefined,
+    shockBrand: usesShockDetails ? normalizedShockBrand : undefined,
     pricingMode: product.pricingMode === "check_availability" ? "check_availability" : "fixed",
     currency: product.currency.trim().toUpperCase(),
     imageUrl: getProductCoverImage({ imageUrl: product.imageUrl, imageUrls }),

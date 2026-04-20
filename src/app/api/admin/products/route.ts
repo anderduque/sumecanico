@@ -41,7 +41,20 @@ function validateProductPayload(x: unknown): { ok: true; product: Product } | { 
   }
   if (
     p.shockBrand !== undefined &&
-    !["GREKIS", "NOR", "OKAMI", "TOKICO", "GABRIEL", "MONROE", "OLDMAN EMU", "MASTER KING", "CIC", "TOYOTA ORIGINAL"].includes(
+    ![
+      "GREBIS",
+      "GREKIS",
+      "BELUCI",
+      "NOR",
+      "OKAMI",
+      "TOKICO",
+      "GABRIEL",
+      "MONROE",
+      "OLDMAN EMU",
+      "MASTER KING",
+      "CIC",
+      "TOYOTA ORIGINAL",
+    ].includes(
       p.shockBrand,
     )
   ) {

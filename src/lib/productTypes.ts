@@ -8,6 +8,7 @@ export type Product = {
   shockBrand?:
     | "GREBIS"
     | "GREKIS"
+    | "BELUCI"
     | "NOR"
     | "OKAMI"
     | "TOKICO"

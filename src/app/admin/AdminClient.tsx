@@ -161,6 +161,8 @@ function validateAdminPassword(value: string) {
 const productCategoryOptions = [
   "Frenos",
   "Amortiguadores",
+  "Guardapolvo",
+  "Resorte Espiral",
   "Caja",
   "Motor",
   "Encendido",
@@ -170,6 +172,8 @@ const productCategoryOptions = [
   "Adicional",
 ] as const;
 
+const categoriesWithShockDetails = new Set(["Amortiguadores", "Guardapolvo", "Resorte Espiral"]);
+
 const shockBrandOptions = [
   "GREKIS",
   "NOR",
@@ -177,6 +181,7 @@ const shockBrandOptions = [
   "TOKICO",
   "GABRIEL",
   "MONROE",
+  "BELUCI",
   "OLDMAN EMU",
   "MASTER KING",
   "CIC",
@@ -662,7 +667,7 @@ export function AdminClient() {
   const isEditingExisting = useMemo(() => {
     return !!draft.slug && products.some((p) => p.slug === draft.slug);
   }, [draft.slug, products]);
-  const requiresShockPosition = draft.category === "Amortiguadores";
+  const requiresShockPosition = categoriesWithShockDetails.has(draft.category);
   const shouldTrackInventory = draft.stockStatus === "in_stock";
   const shouldConsultAvailability = draft.pricingMode === "check_availability";
   const draftImageUrls = useMemo(() => getProductImageUrls(draft), [draft]);
@@ -1139,22 +1144,23 @@ export function AdminClient() {
       setError("La categoría es requerida.");
       return;
     }
-    const shockPosition = category === "Amortiguadores" ? draft.shockPosition : undefined;
-    if (category === "Amortiguadores" && !shockPosition) {
+    const needsShockDetails = categoriesWithShockDetails.has(category);
+    const shockPosition = needsShockDetails ? draft.shockPosition : undefined;
+    if (needsShockDetails && !shockPosition) {
       setState("error");
-      setError("Selecciona si el amortiguador es delantero o trasero.");
+      setError("Selecciona si es delantero o trasero.");
       return;
     }
-    const sku = category === "Amortiguadores" ? draft.sku?.trim() ?? "" : "";
-    if (category === "Amortiguadores" && !sku) {
+    const sku = needsShockDetails ? draft.sku?.trim() ?? "" : "";
+    if (needsShockDetails && !sku) {
       setState("error");
-      setError("El SKU es requerido para amortiguadores.");
+      setError("El SKU es requerido para esta categoría.");
       return;
     }
-    const shockBrand = category === "Amortiguadores" ? normalizeShockBrand(draft.shockBrand) : undefined;
-    if (category === "Amortiguadores" && !shockBrand) {
+    const shockBrand = needsShockDetails ? normalizeShockBrand(draft.shockBrand) : undefined;
+    if (needsShockDetails && !shockBrand) {
       setState("error");
-      setError("Selecciona una marca para el amortiguador.");
+      setError("Selecciona una marca.");
       return;
     }
     const summary = draft.summary.trim();
@@ -2945,12 +2951,13 @@ export function AdminClient() {
                         onChange={(e) =>
                           setDraft((p) => {
                             const nextCategory = e.target.value;
+                            const keepsShockDetails = categoriesWithShockDetails.has(nextCategory);
                             return {
                               ...p,
                               category: nextCategory,
-                              shockPosition: nextCategory === "Amortiguadores" ? p.shockPosition : undefined,
-                              sku: nextCategory === "Amortiguadores" ? p.sku : "",
-                              shockBrand: nextCategory === "Amortiguadores" ? p.shockBrand : undefined,
+                              shockPosition: keepsShockDetails ? p.shockPosition : undefined,
+                              sku: keepsShockDetails ? p.sku : "",
+                              shockBrand: keepsShockDetails ? p.shockBrand : undefined,
                             };
                           })
                         }

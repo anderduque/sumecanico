@@ -54,7 +54,7 @@ export function StoreFilters({
   const [position, setPosition] = useState(initialPosition);
 
   const hasCategory = category.trim() !== "";
-  const isShockCategory = category === "Amortiguadores";
+  const isShockCategory = ["Amortiguadores", "Guardapolvo", "Resorte Espiral"].includes(category);
   const categoryProducts = filterProducts.filter((item) => item.category === category);
   const availableShockBrands = uniqueSortedStrings(categoryProducts.map((item) => item.shockBrand));
   const availableShockPositions = uniqueSortedStrings(
