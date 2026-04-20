@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/cart/CartProvider";
 import { Container } from "@/components/Container";
 import { site } from "@/lib/site";
@@ -26,12 +27,30 @@ function CartSvg(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function NavLink({ href, label }: { href: string; label: string }) {
+function SpinnerIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" className={className}>
+      <circle cx="12" cy="12" r="9" className="stroke-current/25" strokeWidth="3" />
+      <path d="M21 12a9 9 0 0 0-9-9" className="stroke-current" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function NavLink({
+  href,
+  label,
+  onNavigate,
+}: {
+  href: string;
+  label: string;
+  onNavigate?: (href: string, event: React.MouseEvent<HTMLAnchorElement>) => void;
+}) {
   const pathname = usePathname();
   const active = pathname === href || (href !== "/" && pathname.startsWith(href));
   return (
     <Link
       href={href}
+      onClick={(event) => onNavigate?.(href, event)}
       className={[
         "rounded-md px-3 py-2 text-sm font-medium transition-colors",
         active ? "bg-primary text-white" : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900",
@@ -45,8 +64,79 @@ function NavLink({ href, label }: { href: string; label: string }) {
 export function Header() {
   const { totalItems } = useCart();
   const pathname = usePathname();
-  if (pathname.startsWith("/admin")) return null;
+  const hideHeader = pathname.startsWith("/admin");
   const cartActive = pathname === "/carrito";
+  const [showPendingBanner, setShowPendingBanner] = useState(false);
+  const showTimerRef = useRef<number | null>(null);
+  const watchTimerRef = useRef<number | null>(null);
+  const watchDeadlineRef = useRef<number | null>(null);
+  const pathnameRef = useRef("");
+  const pendingHrefRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  function clearNavigationState() {
+    pendingHrefRef.current = null;
+    setShowPendingBanner(false);
+    if (showTimerRef.current !== null) {
+      window.clearTimeout(showTimerRef.current);
+      showTimerRef.current = null;
+    }
+    if (watchTimerRef.current !== null) {
+      window.clearInterval(watchTimerRef.current);
+      watchTimerRef.current = null;
+    }
+    if (watchDeadlineRef.current !== null) {
+      window.clearTimeout(watchDeadlineRef.current);
+      watchDeadlineRef.current = null;
+    }
+  }
+
+  function isAtTarget(targetHref: string) {
+    const current = pathnameRef.current;
+    return current === targetHref || (targetHref !== "/" && current.startsWith(targetHref));
+  }
+
+  function handleNavigate(nextHref: string, event: React.MouseEvent<HTMLAnchorElement>) {
+    if (event.defaultPrevented) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (event.button !== 0) return;
+    if (nextHref === pathname) return;
+    if (!nextHref.startsWith("/tienda")) return;
+
+    pendingHrefRef.current = nextHref;
+    clearNavigationState();
+    pendingHrefRef.current = nextHref;
+
+    showTimerRef.current = window.setTimeout(() => {
+      const target = pendingHrefRef.current;
+      if (!target) return;
+      if (isAtTarget(target)) {
+        clearNavigationState();
+        return;
+      }
+      setShowPendingBanner(true);
+    }, 220);
+
+    watchTimerRef.current = window.setInterval(() => {
+      const target = pendingHrefRef.current;
+      if (!target) {
+        clearNavigationState();
+        return;
+      }
+      if (isAtTarget(target)) {
+        clearNavigationState();
+      }
+    }, 180);
+
+    watchDeadlineRef.current = window.setTimeout(() => {
+      clearNavigationState();
+    }, 12_000);
+  }
+
+  if (hideHeader) return null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white">
@@ -77,7 +167,7 @@ export function Header() {
           <nav className="hidden items-center gap-1 md:flex">
             <NavLink href="/" label="Inicio" />
             <NavLink href="/servicios" label="Servicios" />
-            <NavLink href="/tienda" label="Tienda" />
+            <NavLink href="/tienda" label="Tienda" onNavigate={handleNavigate} />
             <NavLink href="/contacto" label="Contacto" />
             <Link
               href="/carrito"
@@ -103,7 +193,7 @@ export function Header() {
         <nav className="flex items-center gap-2 overflow-x-auto pb-1 md:hidden">
           <NavLink href="/" label="Inicio" />
           <NavLink href="/servicios" label="Servicios" />
-          <NavLink href="/tienda" label="Tienda" />
+          <NavLink href="/tienda" label="Tienda" onNavigate={handleNavigate} />
           <NavLink href="/contacto" label="Contacto" />
           <Link
             href="/carrito"
@@ -119,6 +209,14 @@ export function Header() {
           </Link>
         </nav>
       </Container>
+      {showPendingBanner ? (
+        <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
+          <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-900 shadow-2xl">
+            <SpinnerIcon className="h-5 w-5 animate-spin" />
+            <div>Cargando tienda...</div>
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }
