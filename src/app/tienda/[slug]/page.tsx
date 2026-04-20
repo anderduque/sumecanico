@@ -96,17 +96,19 @@ export default async function ProductoPage({
     product.stockStatus === "in_stock"
       ? "border-emerald-200 bg-emerald-50 text-emerald-800"
       : "border-amber-200 bg-amber-50 text-amber-800";
+  const isConsultOnly = product.pricingMode === "check_availability";
   const detailItems = [
     { label: "Categoría", value: product.category },
     ...(product.shockPosition ? [{ label: "Posición", value: product.shockPosition }] : []),
     { label: "Disponibilidad", value: stockLabel },
-    {
-      label: "Precio referencial",
-      value:
-        product.pricingMode === "check_availability"
-          ? "Consultar disponibilidad"
-          : formatMoney(product.priceCents, { currency: product.currency }),
-    },
+    ...(!isConsultOnly
+      ? [
+          {
+            label: "Precio referencial",
+            value: formatMoney(product.priceCents, { currency: product.currency }),
+          },
+        ]
+      : []),
     {
       label: "Inventario",
       value:
@@ -171,15 +173,11 @@ export default async function ProductoPage({
               <span className={`border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${stockTone}`}>
                 {stockLabel}
               </span>
-              {product.pricingMode === "check_availability" ? (
-                <span className="inline-flex items-center rounded-xl border border-amber-300/25 bg-amber-300/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.14em] text-amber-200">
-                  Consultar disponibilidad
-                </span>
-              ) : (
+              {!isConsultOnly ? (
                 <span className="text-2xl font-semibold text-white">
                   {formatMoney(product.priceCents, { currency: product.currency })}
                 </span>
-              )}
+              ) : null}
             </div>
           </div>
         </Container>
@@ -276,20 +274,16 @@ export default async function ProductoPage({
                   </div>
                 </div>
                 <div className="px-6 py-6">
-                  {product.pricingMode === "check_availability" ? (
-                    <div className="inline-flex items-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-amber-900">
-                      Consultar disponibilidad
-                    </div>
-                  ) : (
+                  {!isConsultOnly ? (
                     <div className="text-3xl font-semibold tracking-tight text-zinc-950">
                       {formatMoney(product.priceCents, { currency: product.currency })}
                     </div>
-                  )}
-                  <p className="mt-3 text-justify text-sm leading-7 text-zinc-700">
-                    {product.pricingMode === "check_availability"
-                      ? "Este repuesto requiere confirmación de existencia y precio al momento. Escríbenos y validamos referencia, compatibilidad y disponibilidad real."
-                      : "Agrega este repuesto al carrito y luego confirmamos referencia, compatibilidad y disponibilidad real antes de procesar la reserva."}
-                  </p>
+                  ) : null}
+                  {!isConsultOnly ? (
+                    <p className="mt-3 text-justify text-sm leading-7 text-zinc-700">
+                      Agrega este repuesto al carrito y luego confirmamos referencia, compatibilidad y disponibilidad real antes de procesar la reserva.
+                    </p>
+                  ) : null}
 
                   <ProductDetailActions product={product} />
 
