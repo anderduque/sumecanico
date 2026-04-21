@@ -1,5 +1,5 @@
 export const site = {
-  name: "SuMecánico",
+  name: "Sumecánico",
   tagline: "Taller mecánico y venta de repuestos",
   logoPath: "/logo.jpg",
   instagramUrl: "https://www.instagram.com/sumecanico/",
