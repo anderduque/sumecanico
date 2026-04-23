@@ -526,6 +526,26 @@ function SpinnerIcon({ className = "" }: { className?: string }) {
   );
 }
 
+function EyeIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" className={className}>
+      <path d="M2.5 12s3.4-7 9.5-7 9.5 7 9.5 7-3.4 7-9.5 7-9.5-7-9.5-7z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </svg>
+  );
+}
+
+function EyeOffIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" className={className}>
+      <path d="M3 5l18 14" />
+      <path d="M10.3 7.2A9.7 9.7 0 0 1 12 7c6.1 0 9.5 5 9.5 5a14.2 14.2 0 0 1-3 3.6" />
+      <path d="M6.5 8.3A14.5 14.5 0 0 0 2.5 12s3.4 7 9.5 7c1.8 0 3.4-.4 4.8-1" />
+      <path d="M9.7 9.5a3.9 3.9 0 0 0-.5 1.9 2.8 2.8 0 0 0 4.3 2.4" />
+    </svg>
+  );
+}
+
 type ApiErrorPayload = {
   error?: string;
   detail?: string;
@@ -610,6 +630,7 @@ const adminActivityWriteThrottleMs = 12_000;
 export function AdminClient() {
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [authHeader, setAuthHeader] = useState<string | null>(null);
 
   const [state, setState] = useState<LoadState>("idle");
@@ -688,6 +709,7 @@ export function AdminClient() {
   }, [compatBodyStyle, compatBrand]);
 
   const lastActivityWriteAtRef = useRef(0);
+  const productsLoadedAuthHeaderRef = useRef<string | null>(null);
 
   const clearStoredAuth = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -714,8 +736,10 @@ export function AdminClient() {
 
   const logout = useCallback(() => {
     clearStoredAuth();
+    productsLoadedAuthHeaderRef.current = null;
     setAuthHeader(null);
     setPassword("");
+    setShowPassword(false);
     setProducts([]);
     setDraft(emptyProduct());
     setCompatibleWithText("");
@@ -907,6 +931,7 @@ export function AdminClient() {
       });
       if (res.status === 401) {
         clearStoredAuth();
+        productsLoadedAuthHeaderRef.current = null;
         setAuthHeader(null);
         setState("error");
         setError("Credenciales inválidas o no configuradas.");
@@ -922,6 +947,7 @@ export function AdminClient() {
       const list = Array.isArray(data) ? (data as Product[]).map(withNormalizedProductImages) : [];
       setProducts(list);
       setState("ready");
+      productsLoadedAuthHeaderRef.current = nextAuthHeader;
       bumpActivity();
       return true;
     } catch {
@@ -1021,7 +1047,9 @@ export function AdminClient() {
   useEffect(() => {
     if (!authHeader) return;
     const t = window.setTimeout(() => {
-      void load(authHeader);
+      if (productsLoadedAuthHeaderRef.current !== authHeader) {
+        void load(authHeader);
+      }
       void loadPaymentMethods(authHeader);
       void loadOrders(authHeader);
     }, 0);
@@ -1506,23 +1534,23 @@ export function AdminClient() {
     }
 
     const header = toAuthHeader(nextUser, password);
-    setAuthHeader(header);
     const ok = await load(header);
-    await loadPaymentMethods(header);
-    if (ok) {
-      setError(null);
-      setPassword("");
-      try {
-        window.sessionStorage.setItem(adminAuthHeaderStorageKey, header);
-        window.sessionStorage.setItem(adminUserStorageKey, nextUser);
-        window.sessionStorage.setItem(adminLastActiveStorageKey, String(Date.now()));
-      } catch {
-        return;
-      }
-      bumpActivity();
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
+    if (!ok) return;
+
+    setAuthHeader(header);
+    setError(null);
+    setPassword("");
+    setShowPassword(false);
+    try {
+      window.sessionStorage.setItem(adminAuthHeaderStorageKey, header);
+      window.sessionStorage.setItem(adminUserStorageKey, nextUser);
+      window.sessionStorage.setItem(adminLastActiveStorageKey, String(Date.now()));
+    } catch {
+      return;
+    }
+    bumpActivity();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
     }
   }
 
@@ -1666,23 +1694,33 @@ export function AdminClient() {
                 >
                   Contraseña
                 </label>
-                <input
-                  id="password"
-                  name="admin-passcode"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  type="password"
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#1b4f7d] focus:ring-4 focus:ring-[#1b4f7d]/15"
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  enterKeyHint="go"
-                  spellCheck={false}
-                  data-1p-ignore="true"
-                  data-lpignore="true"
-                  data-bwignore="true"
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="admin-passcode"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    type={showPassword ? "text" : "password"}
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 pr-12 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#1b4f7d] focus:ring-4 focus:ring-[#1b4f7d]/15"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    enterKeyHint="go"
+                    spellCheck={false}
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center justify-center px-3 text-zinc-500 transition hover:text-zinc-900"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                  </button>
+                </div>
               </div>
 
               {error ? (
