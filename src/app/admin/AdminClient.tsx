@@ -1736,6 +1736,13 @@ export function AdminClient() {
               >
                 Iniciar Sesión
               </button>
+
+              {state === "loading" ? (
+                <div className="mt-2 flex items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-800">
+                  <SpinnerIcon className="h-5 w-5 animate-spin text-primary" />
+                  <div>Validando credenciales...</div>
+                </div>
+              ) : null}
             </form>
           </div>
           <div className="mt-8 text-xs font-semibold tracking-widest text-white/40">
